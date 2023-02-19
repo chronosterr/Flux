@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.637; double maxUAtendon = 0.757; //TODO: Set values
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.640; double maxUAtendon = 0.757; //TODO: Set values
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612; //TODO: Set values
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.5; double maxItendon = 0.8; //TODO: Set values
 
@@ -55,7 +55,8 @@ public class Robot extends TimedRobot {
   float Kp, min_command;
   public boolean isForeArmZero, isUpperArmZero, 
                  isIntakeZero, isForeArmMax, 
-                 isUpperArmMax, isIntakeMax;
+                 isUpperArmMax, isIntakeMax,
+                 isOverExtended;
 
   private final XboxController xbox = new XboxController(2);
 
@@ -71,6 +72,7 @@ public class Robot extends TimedRobot {
   
   private static final String kBubeAuto = "Bube Auto";
   private static final String kConeAuto = "Cone Auto";
+  private static final String kDriveAuto = "Drive Auto";
   private static final String kDefaultAuto = "Default Auto";
   private String m_autoSelected;
   private final SendableChooser<String> m_chooser = new SendableChooser<>();
@@ -101,6 +103,7 @@ public class Robot extends TimedRobot {
 
     m_chooser.addOption("Bube Auto", kBubeAuto);
     m_chooser.addOption("Cone Auto", kConeAuto);
+    m_chooser.addOption("Drive Auto", kDriveAuto);
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
   }
@@ -120,10 +123,80 @@ public class Robot extends TimedRobot {
     checkTendons();
     switch (m_autoSelected) {
       case kBubeAuto:
-        // Put Bube auto code here
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "Bube");
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          m_robotDrive.driveCartesian(0.35, 0, 0);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+        } else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
         break;
       case kConeAuto:
-        // Put cone auto code here
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "cone");
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 3.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+        } else if (3.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          m_robotDrive.driveCartesian(0.35, 0, 0);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+        } else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
+        break;
+      case kDriveAuto:
+      if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
+        m_robotDrive.driveCartesian(0.5, 0, 0);
+      } else if (2.0 < auto_timer.get() && auto_timer.get() < 5.0) {
+        m_robotDrive.driveCartesian(0, 0, .5);
+      } else {
+        m_robotDrive.driveCartesian(0, 0, 0);
+      }
+      break;
       case kDefaultAuto:
       default:
         // Put default auto code here
@@ -170,6 +243,19 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("isForeArmMax", isForeArmMax);
     SmartDashboard.putBoolean("isIntakeZero", isIntakeZero);
     SmartDashboard.putBoolean("isIntakeMax", isIntakeMax);
+  }
+
+  public void checkOverExtended() {
+      if(_UAtendon.get() - _FAtendon.get() < -0.084) {
+        // Forearm Potentiometer limit with UA zero: 0.695
+
+        
+        isOverExtended = true;
+      } else {
+        isOverExtended = false;
+      }
+    
+    SmartDashboard.putBoolean("isOverExtended", isOverExtended);
   }
 
   public void limelightTarget(double x, double y) { //should import x and y limelight values if used
@@ -341,6 +427,7 @@ public class Robot extends TimedRobot {
     int R3 = 10;
 
     checkTendons();
+    checkOverExtended();
     SmartDashboard.putNumber("Upper Arm Potentiometer value", _UAtendon.get());
     SmartDashboard.putNumber("Forearm Potentiometer value", _FAtendon.get());
     SmartDashboard.putNumber("Intake Potentiometer value", _Itendon.get());
@@ -363,14 +450,14 @@ public class Robot extends TimedRobot {
       moveForeArm(0);
     }
 
-    //INTAKE CONTROL
-    if (xbox.getRawButton(A)) { //Opens with A
+    // INTAKE CONTROL
+    if (xbox.getRawButton(Y)) { // Opens with Y
       grabGamePiece(1, "open");
-    } else if (xbox.getRawButton(X)) { //Grabs Bube with X
+    } else if (xbox.getRawButton(X)) { // Grabs Bube with X
       grabGamePiece(-1, "Bube");
-    } else if (xbox.getRawButton(B)) { //Grabs cone with B
+    } else if (xbox.getRawButton(B)) { // Grabs cone with B
       grabGamePiece(-1, "cone");
-    } else if (xbox.getRawButton(Y)) { //Opens fully with Y
+    } else if (xbox.getRawButton(A)) { // Closes fully with A
       grabGamePiece(-1, "zero");
     } else { //Don't move!
       grabGamePiece(0, "zero");
