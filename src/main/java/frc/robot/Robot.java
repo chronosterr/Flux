@@ -199,7 +199,7 @@ public class Robot extends TimedRobot {
       if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
         m_robotDrive.driveCartesian(0.5, 0, 0);
       } else if (2.0 < auto_timer.get() && auto_timer.get() < 5.0) {
-        m_robotDrive.driveCartesian(0, 0, 0.5);
+        m_robotDrive.driveCartesian(0, 0, -.5);
       } else {
         m_robotDrive.driveCartesian(0, 0, 0);
       }
