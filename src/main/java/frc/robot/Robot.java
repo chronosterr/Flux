@@ -45,9 +45,9 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.640; double maxUAtendon = 0.757; //TODO: Set values
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.577; double maxUAtendon = 0.684; //TODO: Set values
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612; //TODO: Set values
-  AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.5; double maxItendon = 0.8; //TODO: Set values
+  AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850; //TODO: Set values
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
 
@@ -70,8 +70,16 @@ public class Robot extends TimedRobot {
   NetworkTableEntry ty = table.getEntry("ty");
   NetworkTableEntry ta = table.getEntry("ta");
   
-  private static final String kBubeAuto = "Bube Auto";
-  private static final String kConeAuto = "Cone Auto";
+  private static final String kNDockCube = "No Dock Cube";
+  private static final String kNDockMisc = "No Dock Middle";
+  private static final String kNDockCone = "No Dock Cone";
+  private static final String kYDockCubeL = "Dock Cube L of C";
+  private static final String kYDockCubeC = "Dock Cube C";
+  private static final String kYDockCubeR = "Dock Cube R of C";
+  private static final String kYDockConeL = "Dock Cone L of C";
+  private static final String kYDockConeC = "Dock Cone C";
+  private static final String kYDockConeR = "Dock Cone R of C";
+
   private static final String kDriveAuto = "Drive Auto";
   private static final String kDefaultAuto = "Default Auto";
   private String m_autoSelected;
@@ -80,10 +88,10 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     Kp = -0.05f;
-    KpYaw = -0.05f;
-    KpPitch = -0.05f;
+    KpYaw = -0.02f;
+    KpPitch = -0.02325f;
     min_command = 0.05f;
-    min_commandYaw = 0.05f;
+    min_commandYaw = 0.02f;
     min_commandPitch = 0.05f;
     gyro.reset();
     CameraServer.startAutomaticCapture();
@@ -105,9 +113,18 @@ public class Robot extends TimedRobot {
     m_robotDrive = new MecanumDrive(_driveFrontLeft, _driveRearLeft, _driveFrontRight, _driveRearRight);
     table.getEntry("ledMode").setNumber(1);
 
-    m_chooser.addOption("Bube Auto", kBubeAuto);
-    m_chooser.addOption("Cone Auto", kConeAuto);
+    m_chooser.addOption("No Dock Cube", kNDockCube);
+    m_chooser.addOption("No Dock Middle", kNDockMisc);
+    m_chooser.addOption("No Dock Cone", kNDockCone);
+    m_chooser.addOption("Dock Cube L of C", kYDockCubeL);
+    m_chooser.addOption("Dock Cube C", kYDockCubeC);
+    m_chooser.addOption("Dock Cube R of C", kYDockCubeR);
+    m_chooser.addOption("Dock Cone L of C", kYDockConeL);
+    m_chooser.addOption("Dock Cone C", kYDockConeC);
+    m_chooser.addOption("Dock Cone R of C", kYDockConeR);
+
     m_chooser.addOption("Drive Auto", kDriveAuto);
+
     m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
     SmartDashboard.putData("Auto choices", m_chooser);
   }
@@ -123,12 +140,55 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    // double heading = gyro.getAngle();
+    double capYaw = 0;
     checkTendons();
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
     switch (m_autoSelected) {
-      case kBubeAuto:
+      case kNDockCube:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "Bube");
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          table.getEntry("pipeline").setNumber(0);
+          limelightTarget(x, y);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+          capYaw = gyro.getYaw();
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          yaw_adjust = 0;
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+          // TODO: THIS ENTIRE SECTION REQUIRES THOROUGH TESTING.
+          if (capYaw + 180 > min_commandYaw) {
+            yaw_adjust = KpYaw * (capYaw + 180);
+          } else if (capYaw - 180 < -min_commandYaw) {
+            yaw_adjust = KpYaw * (capYaw - 180);
+          }
+          m_robotDrive.driveCartesian(0, 0, yaw_adjust);
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+        } else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
+        break;
+            /* case kBubeAuto:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(-1, "Bube");
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
@@ -194,16 +254,16 @@ public class Robot extends TimedRobot {
           moveForeArm(0);
           grabGamePiece(0, "zero");
         }
+        break; */
+        case kDriveAuto:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
+          m_robotDrive.driveCartesian(0.5, 0, 0);
+        } else if (2.0 < auto_timer.get() && auto_timer.get() < 5.0) {
+          m_robotDrive.driveCartesian(0, 0, -.5);
+        } else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+        }
         break;
-      case kDriveAuto:
-      if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
-        m_robotDrive.driveCartesian(0.5, 0, 0);
-      } else if (2.0 < auto_timer.get() && auto_timer.get() < 5.0) {
-        m_robotDrive.driveCartesian(0, 0, -.5);
-      } else {
-        m_robotDrive.driveCartesian(0, 0, 0);
-      }
-      break;
       case kDefaultAuto:
       default:
         // Put default auto code here
@@ -252,7 +312,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("isIntakeMax", isIntakeMax);
   }
 
-  public void checkOverExtended() {
+  public void checkOverExtended() { /* TODO: GET THIS WORKING SOMEHOW
       if(_UAtendon.get() - _FAtendon.get() < -0.084) {
         // Forearm Potentiometer limit with UA zero: 0.695
 
@@ -262,7 +322,7 @@ public class Robot extends TimedRobot {
         isOverExtended = false;
       }
     
-    SmartDashboard.putBoolean("isOverExtended", isOverExtended);
+    SmartDashboard.putBoolean("isOverExtended", isOverExtended); */
   }
 
   public void chargeBalance() {
@@ -271,7 +331,7 @@ public class Robot extends TimedRobot {
     _driveRearLeft.setNeutralMode(NeutralMode.Coast);
     _driveRearRight.setNeutralMode(NeutralMode.Coast);
 
-    yaw = gyro.getYaw();
+    yaw = gyro.getYaw() % 360;
     pitch = gyro.getPitch();
     yaw_adjust = 0.0f;
 
@@ -291,7 +351,7 @@ public class Robot extends TimedRobot {
       _driveRearLeft.setNeutralMode(NeutralMode.Brake);
       _driveRearRight.setNeutralMode(NeutralMode.Brake);
     } else {
-      m_robotDrive.driveCartesian(pitch_adjust, 0, yaw_adjust);
+      m_robotDrive.driveCartesian(-pitch_adjust, 0, -yaw_adjust);
     }
   }
 
@@ -400,7 +460,7 @@ public class Robot extends TimedRobot {
   }
 
   public void grabGamePiece(double speed, String piece) {
-    double zeroBube = 0.693;
+    double zeroBube = 0.745;
     double zeroCone = zeroItendon;
     switch (piece) {
       case "Bube":
@@ -468,6 +528,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Forearm Potentiometer value", _FAtendon.get());
     SmartDashboard.putNumber("Intake Potentiometer value", _Itendon.get());
 
+    SmartDashboard.putNumber("Yaw", gyro.getYaw());
+    SmartDashboard.putNumber("Pitch", gyro.getPitch());
+    SmartDashboard.putNumber("Roll", gyro.getRoll());
+
     //UPPER ARM CONTROL
     if (xbox.getLeftY() > .2) {
       moveUpperArm(1);
@@ -521,7 +585,6 @@ public class Robot extends TimedRobot {
 
     if (r_stick.getRawButton(2)) {
       chargeBalance();
-      System.out.println(gyro.getPitch());
     }
   }
 }
