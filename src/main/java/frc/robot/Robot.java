@@ -49,10 +49,10 @@ public class Robot extends TimedRobot {
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612; //TODO: Set values
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.5; double maxItendon = 0.8; //TODO: Set values
 
-  WPI_Pigeon2 gyro = new WPI_Pigeon2(5);
+  WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
 
-  double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos;
-  float Kp, min_command;
+  double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos, yaw_adjust, yaw, pitch_adjust, pitch;
+  float Kp, min_command, KpYaw, min_commandYaw, KpPitch, min_commandPitch;
   public boolean isForeArmZero, isUpperArmZero, 
                  isIntakeZero, isForeArmMax, 
                  isUpperArmMax, isIntakeMax,
@@ -80,7 +80,11 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     Kp = -0.05f;
+    KpYaw = -0.05f;
+    KpPitch = -0.05f;
     min_command = 0.05f;
+    min_commandYaw = 0.05f;
+    min_commandPitch = 0.05f;
     gyro.reset();
     CameraServer.startAutomaticCapture();
 
@@ -121,6 +125,8 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {
     // double heading = gyro.getAngle();
     checkTendons();
+    x = tx.getDouble(0.0);
+    y = ty.getDouble(0.0);
     switch (m_autoSelected) {
       case kBubeAuto:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
@@ -130,7 +136,8 @@ public class Robot extends TimedRobot {
           moveForeArm(1);
           moveUpperArm(-0.75);
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          m_robotDrive.driveCartesian(0.35, 0, 0);
+          table.getEntry("pipeline").setNumber(0);
+          limelightTarget(x, y);
           moveForeArm(1);
           moveUpperArm(-0.75);
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
@@ -192,7 +199,7 @@ public class Robot extends TimedRobot {
       if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
         m_robotDrive.driveCartesian(0.5, 0, 0);
       } else if (2.0 < auto_timer.get() && auto_timer.get() < 5.0) {
-        m_robotDrive.driveCartesian(0, 0, .5);
+        m_robotDrive.driveCartesian(0, 0, 0.5);
       } else {
         m_robotDrive.driveCartesian(0, 0, 0);
       }
@@ -258,6 +265,36 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("isOverExtended", isOverExtended);
   }
 
+  public void chargeBalance() {
+    _driveFrontLeft.setNeutralMode(NeutralMode.Coast);
+    _driveFrontRight.setNeutralMode(NeutralMode.Coast);
+    _driveRearLeft.setNeutralMode(NeutralMode.Coast);
+    _driveRearRight.setNeutralMode(NeutralMode.Coast);
+
+    yaw = gyro.getYaw();
+    pitch = gyro.getPitch();
+    yaw_adjust = 0.0f;
+
+    if (Math.abs(pitch) > min_commandPitch) {
+      pitch_adjust = KpPitch * pitch; // desired max ~.3
+    }
+
+    if (Math.abs(yaw) > min_commandYaw) {
+      yaw_adjust = KpYaw * yaw; // desired max ???
+    }
+
+    
+    if (yaw_adjust == 0 && pitch_adjust == 0) {
+      m_robotDrive.driveCartesian(0, 0, 0);
+      _driveFrontLeft.setNeutralMode(NeutralMode.Brake);
+      _driveFrontRight.setNeutralMode(NeutralMode.Brake);
+      _driveRearLeft.setNeutralMode(NeutralMode.Brake);
+      _driveRearRight.setNeutralMode(NeutralMode.Brake);
+    } else {
+      m_robotDrive.driveCartesian(pitch_adjust, 0, yaw_adjust);
+    }
+  }
+
   public void limelightTarget(double x, double y) { //should import x and y limelight values if used
     table.getEntry("ledMode").setNumber(3); //turns on LEDs
     this.x = x;
@@ -276,7 +313,6 @@ public class Robot extends TimedRobot {
     } else if (Math.abs(y) < min_command) {
       y_adjust = 0;
     }
-
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), -x_adjust + l_stick.getX(), 0.0 + r_stick.getX());
   }
 
@@ -465,13 +501,13 @@ public class Robot extends TimedRobot {
 
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
-    if (l_stick.getRawButton(1)) { //LIMELIGHT uncovered targeting
+    if (l_stick.getRawButton(1)) { // LIMELIGHT uncovered targeting
       table.getEntry("pipeline").setNumber(0);
       limelightTarget(x, y);
-    } else if (l_stick.getRawButton(5)) {
-      table.getEntry("pipeline").setNumber(3);
+    } else if (l_stick.getRawButton(5)) { // LIMELIGHT top covered?
+      table.getEntry("pipeline").setNumber(3); 
       limelightTarget(x, y);
-    } else if (l_stick.getRawButton(3)) {
+    } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
       table.getEntry("pipeline").setNumber(2);
       limelightTarget(x, y);
     } else if (r_stick.getRawButton(1)) { //APRILTAG targeting
@@ -481,6 +517,11 @@ public class Robot extends TimedRobot {
       table.getEntry("ledMode").setNumber(3); //turns on LEDs
     } else {
       table.getEntry("ledMode").setNumber(1); //turns off LEDs
+    }
+
+    if (r_stick.getRawButton(2)) {
+      chargeBalance();
+      System.out.println(gyro.getPitch());
     }
   }
 }
