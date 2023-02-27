@@ -140,7 +140,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    double capYaw = 1;
+    double capYaw = 0;
     checkTendons();
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
