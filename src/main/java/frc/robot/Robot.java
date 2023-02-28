@@ -133,7 +133,7 @@ public class Robot extends TimedRobot {
   public void autonomousInit() {
     auto_timer.reset();
     auto_timer.start();
-
+    gyro.reset();
     m_autoSelected = m_chooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
   }
@@ -147,47 +147,61 @@ public class Robot extends TimedRobot {
     switch (m_autoSelected) {
       case kNDockCube:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
-          grabGamePiece(-1, "Bube");
+          grabGamePiece(-1, "cube");
+
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
           moveUpperArm(-0.75);
+
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          table.getEntry("pipeline").setNumber(0);
           m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
           moveUpperArm(-0.75);
+
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
           m_robotDrive.driveCartesian(0, 0, 0);
           grabGamePiece(1, "open");
           moveForeArm(0);
           moveUpperArm(0);
-          capYaw = gyro.getYaw();
+
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
           m_robotDrive.driveCartesian(-0.25, 0, 0);
           yaw_adjust = 0;
           grabGamePiece(0, "zero");
-          moveForeArm(-1);
+          moveForeArm(0);
           moveUpperArm(1);
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
-          yaw = gyro.getYaw() % 360;
-          System.out.println("Yaw: " + yaw);
-          System.out.println("CapYaw: " + capYaw);
-          // TODO: THIS ENTIRE SECTION REQUIRES THOROUGH TESTING.
-          // if (capYaw + 180 > min_commandYaw) {
-          //   yaw_adjust = KpYaw * (yaw + 180);
-          // } else if (capYaw - 180 < -min_commandYaw) {
-          //   yaw_adjust = KpYaw * (yaw - 180);
-          // }
-          // m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
-          if (capYaw + 180 > yaw) {
-            m_robotDrive.driveCartesian(0, 0, -.5);
-          } else if (capYaw - 180 < yaw) {
-            m_robotDrive.driveCartesian(0, 0, .5);
+
+          yaw = gyro.getYaw() % 360; // this modulo may cause issues. Further testing required
+          yaw_adjust = 0;
+
+          // TODO: THIS SECTION REQUIRES TESTING.
+          if (Math.abs(yaw + 180) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
           }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+
+          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+          // END TESTING
+
+          // if (capYaw + 180 > yaw) { // TODO: REMOVE IF ABOVE SECTION WORKS
+          //   m_robotDrive.driveCartesian(0, 0, -.5);
+          // } else if (capYaw - 180 < yaw) {
+          //   m_robotDrive.driveCartesian(0, 0, .5);
+          // }
+
+        } else if (10.0 < auto_timer.get() && auto_timer.get() > 12.5) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
+          moveForeArm(0.5);
+          moveUpperArm(-0.5);
+          m_robotDrive.driveCartesian(0.5, 0, 0);
+
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
           moveUpperArm(0);
@@ -195,33 +209,65 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
         }
         break;
-            /* case kBubeAuto:
+
+      case kNDockCone:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
-          grabGamePiece(-1, "Bube");
+          grabGamePiece(-1, "cone");
+
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
           moveUpperArm(-0.75);
+
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           table.getEntry("pipeline").setNumber(0);
           limelightTarget(x, y);
           moveForeArm(1);
           moveUpperArm(-0.75);
+
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
           m_robotDrive.driveCartesian(0, 0, 0);
           grabGamePiece(1, "open");
           moveForeArm(0);
           moveUpperArm(0);
+
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
           m_robotDrive.driveCartesian(-0.25, 0, 0);
+          yaw_adjust = 0;
+          grabGamePiece(0, "zero");
+          moveForeArm(0);
+          moveUpperArm(1);
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
+
+          yaw = gyro.getYaw() % 360; // this modulo may cause issues. Further testing required
+          yaw_adjust = 0;
+
+          // TODO: THIS SECTION REQUIRES TESTING.
+          if (Math.abs(yaw + 180) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+
+          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+          // END TESTING
+
+          // if (capYaw + 180 > yaw) { // TODO: REMOVE IF ABOVE SECTION WORKS
+          //   m_robotDrive.driveCartesian(0, 0, -.5);
+          // } else if (capYaw - 180 < yaw) {
+          //   m_robotDrive.driveCartesian(0, 0, .5);
+          // }
+
+        } else if (10.0 < auto_timer.get() && auto_timer.get() > 12.5) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
+          moveForeArm(0.5);
+          moveUpperArm(-0.5);
+          m_robotDrive.driveCartesian(0.5, 0, 0);
+
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
           moveUpperArm(0);
@@ -229,40 +275,8 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
         }
         break;
-      case kConeAuto:
-        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
-          grabGamePiece(-1, "cone");
-        } else if (1.0 < auto_timer.get() && auto_timer.get() < 3.5) {
-          grabGamePiece(0, "zero");
-          moveForeArm(1);
-          moveUpperArm(-0.75);
-        } else if (3.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          m_robotDrive.driveCartesian(0.35, 0, 0);
-          moveForeArm(1);
-          moveUpperArm(-0.75);
-        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          grabGamePiece(1, "open");
-          moveForeArm(0);
-          moveUpperArm(0);
-        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, 0, 0);
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
-        } else {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          moveUpperArm(0);
-          moveForeArm(0);
-          grabGamePiece(0, "zero");
-        }
-        break; */
-        case kDriveAuto:
+
+      case kDriveAuto:
         if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
           m_robotDrive.driveCartesian(0.5, 0, 0);
         } else if (2.0 < auto_timer.get() && auto_timer.get() < 5.0) {
@@ -276,9 +290,6 @@ public class Robot extends TimedRobot {
         // Put default auto code here
         break;
     }
-    
-    x = tx.getDouble(0.0);
-    y = ty.getDouble(0.0);
   }
 
   public void checkTendons() {
@@ -467,11 +478,11 @@ public class Robot extends TimedRobot {
   }
 
   public void grabGamePiece(double speed, String piece) {
-    double zeroBube = 0.745;
+    double zeroCube = 0.745;
     double zeroCone = zeroItendon;
     switch (piece) {
-      case "Bube":
-        if (speed < 0 && _Itendon.get() > zeroBube) {
+      case "cube":
+        if (speed < 0 && _Itendon.get() > zeroCube) {
           _intake.set(speed);
         } else {
           _intake.set(0);
@@ -500,7 +511,7 @@ public class Robot extends TimedRobot {
         break;
       default:
         table.getEntry("ledMode").setNumber(2);
-        System.out.println("Error @ grabGamePiece - Neither Bube nor cone selected!");
+        System.out.println("Error @ grabGamePiece - Neither cube nor cone selected!");
         break;
       }
   }
@@ -560,8 +571,8 @@ public class Robot extends TimedRobot {
     // INTAKE CONTROL
     if (xbox.getRawButton(Y)) { // Opens with Y
       grabGamePiece(1, "open");
-    } else if (xbox.getRawButton(X)) { // Grabs Bube with X
-      grabGamePiece(-1, "Bube");
+    } else if (xbox.getRawButton(X)) { // Grabs cube with X
+      grabGamePiece(-1, "cube");
     } else if (xbox.getRawButton(B)) { // Grabs cone with B
       grabGamePiece(-1, "cone");
     } else if (xbox.getRawButton(A)) { // Closes fully with A
