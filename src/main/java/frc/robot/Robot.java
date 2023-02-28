@@ -89,10 +89,10 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     Kp = -0.05f;
     KpYaw = -0.02f;
-    KpPitch = -0.02325f;
+    KpPitch = -0.0235f;
     min_command = 0.05f;
     min_commandYaw = 0.02f;
-    min_commandPitch = 0.05f;
+    min_commandPitch = 0.02f;
     gyro.reset();
     CameraServer.startAutomaticCapture();
 
@@ -154,7 +154,7 @@ public class Robot extends TimedRobot {
           moveUpperArm(-0.75);
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           table.getEntry("pipeline").setNumber(0);
-          limelightTarget(x, y);
+          m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
           moveUpperArm(-0.75);
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
@@ -169,18 +169,25 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
-          // TODO: THIS ENTIRE SECTION REQUIRES THOROUGH TESTING.
-          if (capYaw + 180 > min_commandYaw) {
-            yaw_adjust = KpYaw * (capYaw + 180);
-          } else if (capYaw - 180 < -min_commandYaw) {
-            yaw_adjust = KpYaw * (capYaw - 180);
-          }
-          m_robotDrive.driveCartesian(0, 0, yaw_adjust);
         } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
+          yaw = gyro.getYaw() % 360;
+          System.out.println("Yaw: " + yaw);
+          System.out.println("CapYaw: " + capYaw);
+          // TODO: THIS ENTIRE SECTION REQUIRES THOROUGH TESTING.
+          // if (capYaw + 180 > min_commandYaw) {
+          //   yaw_adjust = KpYaw * (yaw + 180);
+          // } else if (capYaw - 180 < -min_commandYaw) {
+          //   yaw_adjust = KpYaw * (yaw - 180);
+          // }
+          // m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+          if (capYaw + 180 > yaw) {
+            m_robotDrive.driveCartesian(0, 0, -.5);
+          } else if (capYaw - 180 < yaw) {
+            m_robotDrive.driveCartesian(0, 0, .5);
+          }
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
           moveUpperArm(0);
@@ -584,6 +591,9 @@ public class Robot extends TimedRobot {
     }
 
     if (r_stick.getRawButton(2)) {
+      if (r_stick.getRawButtonPressed(2)) {
+        gyro.reset();
+      }
       chargeBalance();
     }
   }
