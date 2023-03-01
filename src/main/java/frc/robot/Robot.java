@@ -45,9 +45,9 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.577; double maxUAtendon = 0.684; //TODO: Set values
-  AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612; //TODO: Set values
-  AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850; //TODO: Set values
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.577; double maxUAtendon = 0.684;
+  AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
+  AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
 
@@ -275,7 +275,99 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
         }
         break;
+      
+      case kNDockMisc:
+        // What is this supposed to be?
+        break;
+        
+      case kYDockConeL:
+        // Implement if you aren't lazy
+        break;
+    
+      case kYDockConeC:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "cone");
 
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          table.getEntry("pipeline").setNumber(0);
+          limelightTarget(x, y);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+          m_robotDrive.driveCartesian(-1, 0, 0);
+
+        } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          chargeBalance();
+        }
+        break;
+      
+      case kYDockConeR:
+        // Implement if you aren't lazy
+        break;
+      
+      case kYDockCubeC:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "cube");
+
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          table.getEntry("pipeline").setNumber(0);
+          limelightTarget(x, y);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+          m_robotDrive.driveCartesian(-1, 0, 0);
+
+        } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          chargeBalance();
+        }
+        break;
+        
+      case kYDockCubeL:
+        // Implement if you aren't lazy
+        break;
+      
       case kDriveAuto:
         if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
           m_robotDrive.driveCartesian(0.5, 0, 0);
