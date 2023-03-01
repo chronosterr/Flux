@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.577; double maxUAtendon = 0.684;
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.0; double maxUAtendon = 1;
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
 
@@ -88,10 +88,10 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     Kp = -0.05f;
-    KpYaw = -0.02f;
+    KpYaw = -0.075f;
     KpPitch = -0.0235f;
     min_command = 0.05f;
-    min_commandYaw = 0.02f;
+    min_commandYaw = 0.075f;
     min_commandPitch = 0.02f;
     gyro.reset();
     CameraServer.startAutomaticCapture();
@@ -145,7 +145,7 @@ public class Robot extends TimedRobot {
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
     switch (m_autoSelected) {
-      case kNDockCube:
+      case kNDockCube: // THIS WORKS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(-1, "cube");
 
@@ -166,30 +166,33 @@ public class Robot extends TimedRobot {
           moveUpperArm(0);
 
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          m_robotDrive.driveCartesian(-0.25, -.6, 0);
           yaw_adjust = 0;
           grabGamePiece(0, "zero");
-          moveForeArm(0);
+          moveForeArm(-0.75);
           moveUpperArm(1);
 
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
 
-          yaw = gyro.getYaw() % 360; // this modulo may cause issues. Further testing required
-          yaw_adjust = 0;
+          yaw = (gyro.getYaw() - 180);
 
-          // TODO: THIS SECTION REQUIRES TESTING.
-          if (Math.abs(yaw + 180) > min_commandYaw) {
+          if (Math.abs(yaw) > min_commandYaw) {
             yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
           }
           
           System.out.println("Yaw: " + yaw);
           System.out.println("Yaw Adjust " + yaw_adjust);
-
+    
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
-          // END TESTING
 
           // if (capYaw + 180 > yaw) { // TODO: REMOVE IF ABOVE SECTION WORKS
           //   m_robotDrive.driveCartesian(0, 0, -.5);
@@ -197,10 +200,10 @@ public class Robot extends TimedRobot {
           //   m_robotDrive.driveCartesian(0, 0, .5);
           // }
 
-        } else if (10.0 < auto_timer.get() && auto_timer.get() > 12.5) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
           moveForeArm(0.5);
-          moveUpperArm(-0.5);
-          m_robotDrive.driveCartesian(0.5, 0, 0);
+          moveUpperArm(-1);
+          m_robotDrive.driveCartesian(0.4, 0, 0);
 
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -243,25 +246,23 @@ public class Robot extends TimedRobot {
           moveForeArm(-1);
           moveUpperArm(1);
 
-          yaw = gyro.getYaw() % 360; // this modulo may cause issues. Further testing required
-          yaw_adjust = 0;
-
-          // TODO: THIS SECTION REQUIRES TESTING.
+          yaw = gyro.getYaw() % 360;
           if (Math.abs(yaw + 180) > min_commandYaw) {
             yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (Math.abs(yaw_adjust) > 0.5) {
+            if (yaw_adjust < 0) {
+              yaw_adjust = -0.5;
+            } else {
+              yaw_adjust = 0.5;
+            }
           }
           
           System.out.println("Yaw: " + yaw);
           System.out.println("Yaw Adjust " + yaw_adjust);
-
+    
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
-          // END TESTING
-
-          // if (capYaw + 180 > yaw) { // TODO: REMOVE IF ABOVE SECTION WORKS
-          //   m_robotDrive.driveCartesian(0, 0, -.5);
-          // } else if (capYaw - 180 < yaw) {
-          //   m_robotDrive.driveCartesian(0, 0, .5);
-          // }
 
         } else if (10.0 < auto_timer.get() && auto_timer.get() > 12.5) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
           moveForeArm(0.5);
@@ -698,6 +699,26 @@ public class Robot extends TimedRobot {
         gyro.reset();
       }
       chargeBalance();
+    }
+
+    if (l_stick.getRawButton(11)) {
+      yaw = gyro.getYaw() % 360;
+      if (Math.abs(yaw + 180) > min_commandYaw) {
+        yaw_adjust = KpYaw * yaw;
+      }
+
+      if (Math.abs(yaw_adjust) > 0.5) {
+        if (yaw_adjust < 0) {
+          yaw_adjust = -0.5;
+        } else {
+          yaw_adjust = 0.5;
+        }
+      }
+      
+      System.out.println("Yaw: " + yaw);
+      System.out.println("Yaw Adjust " + yaw_adjust);
+
+      m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
     }
   }
 }
