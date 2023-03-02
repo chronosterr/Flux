@@ -105,10 +105,10 @@ public class Robot extends TimedRobot {
     _intake.configFactoryDefault();
     _foreArm.configFactoryDefault();
 
-    _foreArm.setNeutralMode(NeutralMode.Brake); //TODO: redundant?
+    _foreArm.setNeutralMode(NeutralMode.Brake); // possibly redundant, but it helps my brain
     
-    _driveFrontLeft.setInverted(false); //redundant, but it helps my brain
-    _driveRearLeft.setInverted(false); //redundant, but it helps my brain
+    _driveFrontLeft.setInverted(false); // redundant, but it helps my brain
+    _driveRearLeft.setInverted(false); // redundant, but it helps my brain
     _driveFrontRight.setInverted(true);
     _driveRearRight.setInverted(true);
   
@@ -556,21 +556,21 @@ public class Robot extends TimedRobot {
     isIntakeMax = false;
     isIntakeZero = false;
 
-    if (FApos > zeroFAtendon) { //checks if potentiometer in zero range (+ or - 0.05)
+    if (FApos > zeroFAtendon) { // checks if FA has exceeded zero
       isForeArmZero = true;
-    } else if (FApos < maxFAtendon) {
+    } else if (FApos < maxFAtendon) { // checks if FA has exceeded max
       isForeArmMax = true;
     }
     
-    if (UApos < zeroUAtendon) { //checks if potentiometer is in zero range (+ or - 0.05)
+    if (UApos < zeroUAtendon) { // checks if UA has exceeded zero
       isUpperArmZero = true;
-    } else if (UApos > maxUAtendon) {
+    } else if (UApos > maxUAtendon) { // checks if UA has exceeded max
       isUpperArmMax = true;
     }
 
-    if (Ipos < zeroItendon) { //checks if potentiometer is in zero range (+ or - 0.05)
+    if (Ipos < zeroItendon) { // checks if intake has exceeded 0
       isIntakeZero = true;
-    } else if (Ipos > maxItendon) {
+    } else if (Ipos > maxItendon) { // checks if intake has exceeded max
       isIntakeMax = true;
     }
 
@@ -626,8 +626,23 @@ public class Robot extends TimedRobot {
     }
   }
 
-  public void limelightTarget(double x, double y) { //should import x and y limelight values if used
-    table.getEntry("ledMode").setNumber(3); //turns on LEDs
+  /*
+   * LIMELIGHT CHEAT SHEET!
+   * ledMode:
+   * 0 - Pipeline default
+   * 1 - Off
+   * 2 - Flash
+   * 3 - On
+   * 
+   * pipeline:
+   * 0 - Reflective Tape UNCOVERED
+   * 1 - AprilTags (UNUSED)
+   * 2 - Reflective Tape BOTTOM COVERED
+   * 3 - Reflective Tape TOP COVERED
+   */
+
+  public void limelightTarget(double x, double y) {
+    table.getEntry("ledMode").setNumber(3);
     this.x = x;
     this.y = y;
     x_adjust = 0.0f;
@@ -647,9 +662,9 @@ public class Robot extends TimedRobot {
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), -x_adjust + l_stick.getX(), 0.0 + r_stick.getX());
   }
 
-  public void aprilTagsTarget(double x, double y) { //should import x and y limelight values if used
+  public void aprilTagsTarget(double x, double y) {
     table.getEntry("pipeline").setNumber(1);
-    table.getEntry("ledMode").setNumber(3); //turns on LEDs
+    table.getEntry("ledMode").setNumber(3);
     this.x = x;
     this.y = y;
     x_adjust = 0.0f;
@@ -664,24 +679,6 @@ public class Robot extends TimedRobot {
       y_adjust = 0;
     }
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), 0.0 + l_stick.getX(), -x_adjust + r_stick.getX());
-  }
-
-  public void zeroedPosition() {
-    if (!isUpperArmZero) {
-      if (_upperArm.get() - 0.05 > zeroUAtendon) {
-        _upperArm.set(-0.2);
-      } else if (_upperArm.get() + 0.05 < zeroUAtendon) {
-        _upperArm.set(0.2);
-      }
-    }
-
-    if (!isForeArmZero) {
-      if (_FAtendon.get() - 0.05 > zeroFAtendon) {
-        _foreArm.set(-0.2);
-      } else if (_FAtendon.get() + 0.05 < zeroFAtendon) {
-        _foreArm.set(0.2);
-      }
-    }
   }
 
   public void moveUpperArm(double speed) {
@@ -702,15 +699,19 @@ public class Robot extends TimedRobot {
     }
   }
 
-  // public void moveUpperArm(double speed) {
-  //   if (speed < 0) {
-  //     _upperArm.set(-0.75);
-  //   } else if (speed > 0) {
-  //     _upperArm.set(0.75);
-  //   } else {
-  //     _upperArm.set(0);
-  //   }
-  // }
+  /*
+  TODO: It may be beneficial to code in a potentiometer kill-switch that defaults to this (although it could just change max and zero values to allow infinite reach)
+  public void moveUpperArm(double speed) {
+    if (speed < 0) {
+      _upperArm.set(-0.75);
+    } else if (speed > 0) {
+      _upperArm.set(0.75);
+    } else {
+      _upperArm.set(0);
+    }
+  }
+   */
+
 
   public void moveForeArm(double speed) {
     if (speed < 0) {
@@ -771,17 +772,15 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic() {
-    // Use the joystick X axis for lateral movement, Y axis for forward
-    // movement, and Z axis for rotation.
-    //XBOX DRIVE IS BELOW
+    // Use the L joystick X axis for lateral movement, Y axis for forward
+    // movement, and R joystick Z axis for rotation.
+    // XBOX DRIVE IS BELOW
     // m_robotDrive.driveCartesian(-xbox.getLeftY(), -xbox.getLeftX(), xbox.getRightX(), 0.0);
     
-    //FIELD-ORIENTED DRIVE
-    //m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ(), gyro.getAngle()+180);
+    // FIELD-ORIENTED DRIVE
+    // m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ(), gyro.getAngle()+180);
 
-    //ROBOT-ORIENTED DRIVE
-    //double intensity = (l_stick.getThrottle() + 1) / 2; (CORRECT)
-
+    // ROBOT-ORIENTED DRIVE
     m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ());
 
     int L1 = 5;
@@ -803,7 +802,7 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
     SmartDashboard.putNumber("Roll", gyro.getRoll());
 
-    //UPPER ARM CONTROL
+    // UPPER ARM CONTROL
     if (xbox.getLeftY() > .2) {
       moveUpperArm(1);
     } else if (xbox.getLeftY() < -.2) {
@@ -812,7 +811,7 @@ public class Robot extends TimedRobot {
       moveUpperArm(0);
     }
 
-    //FOREARM CONTROL
+    // FOREARM CONTROL
     if (xbox.getRightY() > .2) {
       moveForeArm(-1);
     } else if (xbox.getRightY() < -.2) {
@@ -830,7 +829,7 @@ public class Robot extends TimedRobot {
       grabGamePiece(-1, "cone");
     } else if (xbox.getRawButton(A)) { // Closes fully with A
       grabGamePiece(-1, "zero");
-    } else { //Don't move!
+    } else { // Don't move!
       grabGamePiece(0, "zero");
     }
 
@@ -845,23 +844,23 @@ public class Robot extends TimedRobot {
     } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
       table.getEntry("pipeline").setNumber(2);
       limelightTarget(x, y);
-    } else if (r_stick.getRawButton(1)) { //APRILTAG targeting
+    } else if (r_stick.getRawButton(1)) { // APRILTAG targeting
       table.getEntry("pipeline").setNumber(1);
       aprilTagsTarget(x, y);
     } else if (l_stick.getRawButton(2)) {
-      table.getEntry("ledMode").setNumber(3); //turns on LEDs
+      table.getEntry("ledMode").setNumber(3);
     } else {
-      table.getEntry("ledMode").setNumber(1); //turns off LEDs
+      table.getEntry("ledMode").setNumber(1);
     }
-
+    
     if (r_stick.getRawButton(2)) {
       if (r_stick.getRawButtonPressed(2)) {
-        gyro.reset();
+        gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
       }
       chargeBalance();
     }
 
-    if (l_stick.getRawButton(11)) {
+    if (l_stick.getRawButton(11)) { // TODO: REMOVE AFTER DEBUGGING (or keep idc might be useful)
       yaw = gyro.getYaw() % 360;
       if (Math.abs(yaw + 180) > min_commandYaw) {
         yaw_adjust = KpYaw * yaw;
