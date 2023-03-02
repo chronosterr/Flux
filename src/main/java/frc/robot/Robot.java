@@ -70,9 +70,11 @@ public class Robot extends TimedRobot {
   NetworkTableEntry ty = table.getEntry("ty");
   NetworkTableEntry ta = table.getEntry("ta");
   
-  private static final String kNDockCube = "No Dock Cube";
+  private static final String kNDockCubeL = "No Dock Cube L of C";
+  private static final String kNDockCubeR = "No Dock Cube R of C";
   private static final String kNDockMisc = "No Dock Middle";
-  private static final String kNDockCone = "No Dock Cone";
+  private static final String kNDockConeL = "No Dock Cone L of C";
+  private static final String kNDockConeR = "No Dock Cone R of C";
   private static final String kYDockCubeL = "Dock Cube L of C";
   private static final String kYDockCubeC = "Dock Cube C";
   private static final String kYDockCubeR = "Dock Cube R of C";
@@ -113,9 +115,11 @@ public class Robot extends TimedRobot {
     m_robotDrive = new MecanumDrive(_driveFrontLeft, _driveRearLeft, _driveFrontRight, _driveRearRight);
     table.getEntry("ledMode").setNumber(1);
 
-    m_chooser.addOption("No Dock Cube", kNDockCube);
+    m_chooser.addOption("No Dock Cube L of C", kNDockCubeL);
+    m_chooser.addOption("No Dock Cube L of C", kNDockCubeR);
     m_chooser.addOption("No Dock Middle", kNDockMisc);
-    m_chooser.addOption("No Dock Cone", kNDockCone);
+    m_chooser.addOption("No Dock Cone", kNDockConeL);
+    m_chooser.addOption("No Dock Cone", kNDockConeR);
     m_chooser.addOption("Dock Cube L of C", kYDockCubeL);
     m_chooser.addOption("Dock Cube C", kYDockCubeC);
     m_chooser.addOption("Dock Cube R of C", kYDockCubeR);
@@ -145,7 +149,69 @@ public class Robot extends TimedRobot {
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
     switch (m_autoSelected) {
-      case kNDockCube: // THIS WORKS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      case kNDockCubeL:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "cube");
+
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          m_robotDrive.driveCartesian(0.25, 0, 0);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, .6, 0);
+          yaw_adjust = 0;
+          grabGamePiece(0, "zero");
+          moveForeArm(-0.75);
+          moveUpperArm(1);
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+
+          yaw = (gyro.getYaw() - 180);
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+    
+          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          moveForeArm(0.5);
+          moveUpperArm(-1);
+          m_robotDrive.driveCartesian(0.4, 0, 0);
+
+        } else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
+        break;
+
+      case kNDockCubeR:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(-1, "cube");
 
@@ -194,13 +260,7 @@ public class Robot extends TimedRobot {
     
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
 
-          // if (capYaw + 180 > yaw) { // TODO: REMOVE IF ABOVE SECTION WORKS
-          //   m_robotDrive.driveCartesian(0, 0, -.5);
-          // } else if (capYaw - 180 < yaw) {
-          //   m_robotDrive.driveCartesian(0, 0, .5);
-          // }
-
-        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           moveForeArm(0.5);
           moveUpperArm(-1);
           m_robotDrive.driveCartesian(0.4, 0, 0);
@@ -213,18 +273,17 @@ public class Robot extends TimedRobot {
         }
         break;
 
-      case kNDockCone:
+      case kNDockConeL:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(-1, "cone");
-
+          
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
           moveUpperArm(-0.75);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          table.getEntry("pipeline").setNumber(0);
-          limelightTarget(x, y);
+          m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
           moveUpperArm(-0.75);
 
@@ -235,28 +294,27 @@ public class Robot extends TimedRobot {
           moveUpperArm(0);
 
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, 0, 0);
+          m_robotDrive.driveCartesian(-0.25, .6, 0);
           yaw_adjust = 0;
           grabGamePiece(0, "zero");
-          moveForeArm(0);
+          moveForeArm(-0.75);
           moveUpperArm(1);
 
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
 
-          yaw = gyro.getYaw() % 360;
-          if (Math.abs(yaw + 180) > min_commandYaw) {
+          yaw = (gyro.getYaw() - 180);
+
+          if (Math.abs(yaw) > min_commandYaw) {
             yaw_adjust = KpYaw * yaw;
           }
     
-          if (Math.abs(yaw_adjust) > 0.5) {
-            if (yaw_adjust < 0) {
-              yaw_adjust = -0.5;
-            } else {
-              yaw_adjust = 0.5;
-            }
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
           }
           
           System.out.println("Yaw: " + yaw);
@@ -264,10 +322,10 @@ public class Robot extends TimedRobot {
     
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
 
-        } else if (10.0 < auto_timer.get() && auto_timer.get() > 12.5) { // TODO: Goal is to have arm outstretched to grab another piece at the end of auto. Test if this works.
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           moveForeArm(0.5);
-          moveUpperArm(-0.5);
-          m_robotDrive.driveCartesian(0.5, 0, 0);
+          moveUpperArm(-1);
+          m_robotDrive.driveCartesian(0.4, 0, 0);
 
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -277,8 +335,105 @@ public class Robot extends TimedRobot {
         }
         break;
       
-      case kNDockMisc:
-        // What is this supposed to be?
+      case kNDockConeR:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "cone");
+          
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          m_robotDrive.driveCartesian(0.25, 0, 0);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, -.6, 0);
+          yaw_adjust = 0;
+          grabGamePiece(0, "zero");
+          moveForeArm(-0.75);
+          moveUpperArm(1);
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+
+          yaw = (gyro.getYaw() - 180);
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+    
+          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          moveForeArm(0.5);
+          moveUpperArm(-1);
+          m_robotDrive.driveCartesian(0.4, 0, 0);
+
+        } else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
+        break;
+      
+      case kNDockMisc: // drops cube atm
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(-1, "cube");
+
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+          m_robotDrive.driveCartesian(0.25, 0, 0);
+          moveForeArm(1);
+          moveUpperArm(-0.75);
+
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          grabGamePiece(1, "open");
+          moveForeArm(0);
+          moveUpperArm(0);
+
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+          m_robotDrive.driveCartesian(-0.25, -.6, 0);
+          yaw_adjust = 0;
+          grabGamePiece(0, "zero");
+          moveForeArm(-0.75);
+          moveUpperArm(1);
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 15.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(-1);
+          moveUpperArm(1);
+        }  else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
         break;
         
       case kYDockConeL:
@@ -358,7 +513,11 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
-          m_robotDrive.driveCartesian(-1, 0, 0);
+          if (!(gyro.getPitch() < -10)) {
+            m_robotDrive.driveCartesian(-1, 0, 0);
+          } else {
+            m_robotDrive.driveCartesian(0, 0, 0);
+          }
 
         } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           chargeBalance();
@@ -423,17 +582,18 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("isIntakeMax", isIntakeMax);
   }
 
-  public void checkOverExtended() { /* TODO: GET THIS WORKING SOMEHOW
-      if(_UAtendon.get() - _FAtendon.get() < -0.084) {
+  public void checkOverExtended() {
+    // The goal is to get FA to look like UA. I hypothesize we can do this by flipping the sign of FA and adding two. Testing required.
+    double UA = _UAtendon.get();
+    double FA = -_FAtendon.get() + 2;
+      if(Math.abs(FA - UA) < 0.5) { // change 0.5 based on testing. that number resembles the allowed VARIANCE between FA and UA.
         // Forearm Potentiometer limit with UA zero: 0.695
-
-        
         isOverExtended = true;
       } else {
         isOverExtended = false;
       }
     
-    SmartDashboard.putBoolean("isOverExtended", isOverExtended); */
+    SmartDashboard.putBoolean("isOverExtended", isOverExtended);
   }
 
   public void chargeBalance() {
