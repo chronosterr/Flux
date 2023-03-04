@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.0; double maxUAtendon = 1;
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.53; double maxUAtendon = 0.657;
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
 
@@ -89,7 +89,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void robotInit() {
-    Kp = -0.05f;
+    Kp = -0.07f;
     KpYaw = -0.075f;
     KpPitch = -0.0235f;
     min_command = 0.05f;
@@ -116,10 +116,10 @@ public class Robot extends TimedRobot {
     table.getEntry("ledMode").setNumber(1);
 
     m_chooser.addOption("No Dock Cube L of C", kNDockCubeL);
-    m_chooser.addOption("No Dock Cube L of C", kNDockCubeR);
+    m_chooser.addOption("No Dock Cube R of C", kNDockCubeR);
     m_chooser.addOption("No Dock Middle", kNDockMisc);
-    m_chooser.addOption("No Dock Cone", kNDockConeL);
-    m_chooser.addOption("No Dock Cone", kNDockConeR);
+    m_chooser.addOption("No Dock Cone L of C", kNDockConeL);
+    m_chooser.addOption("No Dock Cone R of C", kNDockConeR);
     m_chooser.addOption("Dock Cube L of C", kYDockCubeL);
     m_chooser.addOption("Dock Cube C", kYDockCubeC);
     m_chooser.addOption("Dock Cube R of C", kYDockCubeR);
@@ -235,18 +235,26 @@ public class Robot extends TimedRobot {
           m_robotDrive.driveCartesian(-0.25, -.6, 0);
           yaw_adjust = 0;
           grabGamePiece(0, "zero");
-          moveForeArm(-0.75);
+          moveForeArm(-1);
           moveUpperArm(1);
 
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+          m_robotDrive.driveCartesian(-0.4, 0, 0);
+          yaw_adjust = 0;
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
 
-          yaw = (gyro.getYaw() - 180);
+        } else if (10.0 < auto_timer.get() && auto_timer.get() < 12.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(0);
+          moveUpperArm(0);
+
+          // + turns clockwise, - turns counterclockwise
+          yaw = (gyro.getYaw() + 180);
 
           if (Math.abs(yaw) > min_commandYaw) {
-            yaw_adjust = KpYaw * yaw;
+            yaw_adjust = (KpYaw * yaw);
           }
     
           if (yaw_adjust > 0.5) {
@@ -261,9 +269,9 @@ public class Robot extends TimedRobot {
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
 
         } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-          moveForeArm(0.5);
-          moveUpperArm(-1);
-          m_robotDrive.driveCartesian(0.4, 0, 0);
+          moveForeArm(0);
+          moveUpperArm(0);
+          m_robotDrive.driveCartesian(0.0, 0, 0);
 
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -622,7 +630,7 @@ public class Robot extends TimedRobot {
       _driveRearLeft.setNeutralMode(NeutralMode.Brake);
       _driveRearRight.setNeutralMode(NeutralMode.Brake);
     } else {
-      m_robotDrive.driveCartesian(-pitch_adjust, 0, -yaw_adjust);
+      m_robotDrive.driveCartesian(-pitch_adjust - l_stick.getY(), 0.0 + l_stick.getX(), -yaw_adjust + r_stick.getZ());
     }
   }
 
