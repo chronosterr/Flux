@@ -45,7 +45,7 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.53; double maxUAtendon = 0.657;
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.535; double maxUAtendon = 0.643;
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
 
@@ -144,7 +144,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    double capYaw = 0;
     checkTendons();
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
@@ -156,7 +155,7 @@ public class Robot extends TimedRobot {
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
-          moveUpperArm(-0.75);
+          moveUpperArm(-1);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           m_robotDrive.driveCartesian(0.25, 0, 0);
@@ -170,18 +169,56 @@ public class Robot extends TimedRobot {
           moveUpperArm(0);
 
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, .6, 0);
-          yaw_adjust = 0;
-          grabGamePiece(0, "zero");
-          moveForeArm(-0.75);
-          moveUpperArm(1);
-
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
 
-          yaw = (gyro.getYaw() - 180);
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+    
+          m_robotDrive.driveCartesian(-0.25, .5, -yaw_adjust);
+          yaw_adjust = 0;
+
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
+          moveForeArm(-1);
+          moveUpperArm(1);
+          grabGamePiece(0, "zero");
+
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+
+          m_robotDrive.driveCartesian(-0.27, 0, -yaw_adjust);
+          yaw_adjust = 0;
+      
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          moveForeArm(-1);
+          moveUpperArm(1);
+
+          yaw = (gyro.getYaw() + 180);
 
           if (Math.abs(yaw) > min_commandYaw) {
             yaw_adjust = KpYaw * yaw;
@@ -197,11 +234,6 @@ public class Robot extends TimedRobot {
           System.out.println("Yaw Adjust " + yaw_adjust);
     
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
-
-        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-          moveForeArm(0.5);
-          moveUpperArm(-1);
-          m_robotDrive.driveCartesian(0.4, 0, 0);
 
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -218,12 +250,12 @@ public class Robot extends TimedRobot {
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
-          moveUpperArm(-0.75);
+          moveUpperArm(-1);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
-          moveUpperArm(-0.75);
+          moveUpperArm(-1);
 
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -232,29 +264,14 @@ public class Robot extends TimedRobot {
           moveUpperArm(0);
 
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, -.6, 0);
-          yaw_adjust = 0;
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
 
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
-          m_robotDrive.driveCartesian(-0.4, 0, 0);
-          yaw_adjust = 0;
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
-
-        } else if (10.0 < auto_timer.get() && auto_timer.get() < 12.0) {
-          grabGamePiece(0, "zero");
-          moveForeArm(0);
-          moveUpperArm(0);
-
-          // + turns clockwise, - turns counterclockwise
-          yaw = (gyro.getYaw() + 180);
+          yaw = gyro.getYaw();
 
           if (Math.abs(yaw) > min_commandYaw) {
-            yaw_adjust = (KpYaw * yaw);
+            yaw_adjust = KpYaw * yaw;
           }
     
           if (yaw_adjust > 0.5) {
@@ -266,54 +283,37 @@ public class Robot extends TimedRobot {
           System.out.println("Yaw: " + yaw);
           System.out.println("Yaw Adjust " + yaw_adjust);
     
-          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+          m_robotDrive.driveCartesian(-0.25, -.5, -yaw_adjust);
+          yaw_adjust = 0;
 
+        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
+          moveForeArm(-1);
+          moveUpperArm(1);
+          grabGamePiece(0, "zero");
+
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+          
+          System.out.println("Yaw: " + yaw);
+          System.out.println("Yaw Adjust " + yaw_adjust);
+
+          m_robotDrive.driveCartesian(-0.27, 0, -yaw_adjust);
+          yaw_adjust = 0;
+      
         } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           moveForeArm(0);
           moveUpperArm(0);
-          m_robotDrive.driveCartesian(0.0, 0, 0);
 
-        } else {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          moveUpperArm(0);
-          moveForeArm(0);
-          grabGamePiece(0, "zero");
-        }
-        break;
-
-      case kNDockConeL:
-        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
-          grabGamePiece(-1, "cone");
-          
-        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
-          grabGamePiece(0, "zero");
-          moveForeArm(1);
-          moveUpperArm(-0.75);
-
-        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          m_robotDrive.driveCartesian(0.25, 0, 0);
-          moveForeArm(1);
-          moveUpperArm(-0.75);
-
-        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          grabGamePiece(1, "open");
-          moveForeArm(0);
-          moveUpperArm(0);
-
-        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, .6, 0);
-          yaw_adjust = 0;
-          grabGamePiece(0, "zero");
-          moveForeArm(-0.75);
-          moveUpperArm(1);
-
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 12.0) {
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
-
-          yaw = (gyro.getYaw() - 180);
+          yaw = (gyro.getYaw() + 180);
 
           if (Math.abs(yaw) > min_commandYaw) {
             yaw_adjust = KpYaw * yaw;
@@ -330,11 +330,6 @@ public class Robot extends TimedRobot {
     
           m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
 
-        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-          moveForeArm(0.5);
-          moveUpperArm(-1);
-          m_robotDrive.driveCartesian(0.4, 0, 0);
-
         } else {
           m_robotDrive.driveCartesian(0, 0, 0);
           moveUpperArm(0);
@@ -342,6 +337,101 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
         }
         break;
+
+      case kNDockConeL:
+      if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+        grabGamePiece(-1, "cone");
+
+      } else if (1.0 < auto_timer.get() && auto_timer.get() < 7.0) {
+        grabGamePiece(0, "zero");
+        moveForeArm(1);
+        moveUpperArm(-1);
+
+      } else if (7.0 < auto_timer.get() && auto_timer.get() < 8.5) {
+        m_robotDrive.driveCartesian(0.25, 0, 0);
+        moveForeArm(-0.60);
+        moveUpperArm(0);
+
+      } else if (8.5 < auto_timer.get() && auto_timer.get() < 9.5) {
+        m_robotDrive.driveCartesian(0, 0, 0);
+        grabGamePiece(1, "open");
+        moveForeArm(0);
+        moveUpperArm(0);
+
+      } else if (9.5 < auto_timer.get() && auto_timer.get() < 10.5) {
+        grabGamePiece(0, "zero");
+        moveForeArm(-1);
+        moveUpperArm(1);
+
+        yaw = gyro.getYaw();
+
+        if (Math.abs(yaw) > min_commandYaw) {
+          yaw_adjust = KpYaw * yaw;
+        }
+  
+        if (yaw_adjust > 0.5) {
+          yaw_adjust = 0.5;
+        } else if (yaw_adjust < -0.5) {
+          yaw_adjust = -0.5;
+        }
+        
+        System.out.println("Yaw: " + yaw);
+        System.out.println("Yaw Adjust " + yaw_adjust);
+  
+        m_robotDrive.driveCartesian(-0.25, .5, -yaw_adjust);
+        yaw_adjust = 0;
+
+      } else if (10.5 < auto_timer.get() && auto_timer.get() < 13.0) {
+        moveForeArm(-1);
+        moveUpperArm(1);
+        grabGamePiece(0, "zero");
+
+        yaw = gyro.getYaw();
+
+        if (Math.abs(yaw) > min_commandYaw) {
+          yaw_adjust = KpYaw * yaw;
+        }
+  
+        if (yaw_adjust > 0.5) {
+          yaw_adjust = 0.5;
+        } else if (yaw_adjust < -0.5) {
+          yaw_adjust = -0.5;
+        }
+        
+        System.out.println("Yaw: " + yaw);
+        System.out.println("Yaw Adjust " + yaw_adjust);
+
+        m_robotDrive.driveCartesian(-0.27, 0, -yaw_adjust);
+        yaw_adjust = 0;
+    
+      } else if (13.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+        moveForeArm(-1);
+        moveUpperArm(1);
+
+        yaw = (gyro.getYaw() + 180);
+
+        if (Math.abs(yaw) > min_commandYaw) {
+          yaw_adjust = KpYaw * yaw;
+        }
+  
+        if (yaw_adjust > 0.5) {
+          yaw_adjust = 0.5;
+        } else if (yaw_adjust < -0.5) {
+          yaw_adjust = -0.5;
+        }
+        
+        System.out.println("Yaw: " + yaw);
+        System.out.println("Yaw Adjust " + yaw_adjust);
+  
+        m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+
+      } else {
+        m_robotDrive.driveCartesian(0, 0, 0);
+        moveUpperArm(0);
+        moveForeArm(0);
+        grabGamePiece(0, "zero");
+      }
+      break;
       
       case kNDockConeR:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
@@ -591,15 +681,18 @@ public class Robot extends TimedRobot {
   }
 
   public void checkOverExtended() {
-    // The goal is to get FA to look like UA. I hypothesize we can do this by flipping the sign of FA and adding two. Testing required.
+    isOverExtended = false;
     double UA = _UAtendon.get();
-    double FA = -_FAtendon.get() + 2;
-      if(Math.abs(FA - UA) < 0.5) { // change 0.5 based on testing. that number resembles the allowed VARIANCE between FA and UA.
-        // Forearm Potentiometer limit with UA zero: 0.695
-        isOverExtended = true;
-      } else {
-        isOverExtended = false;
-      }
+    double FA = _FAtendon.get();
+    // double FA = (_FAtendon.get() - 2.7418)/-3.480;
+    if (UA <= 0.6) { // 48" - 46"
+      if (FA < 0.682) {isOverExtended = true;}
+    } else if (0.6 < UA && UA <= 0.613) { // 46" - 44"
+      if (FA < 0.631) {isOverExtended = true;}
+    } else if (0.613 < UA && UA <= 0.622) { // 44" - 42"
+      if (FA < 0.618) {isOverExtended = true;}
+    }
+    // between 42" and 38", FA can be any value.
     
     SmartDashboard.putBoolean("isOverExtended", isOverExtended);
   }
@@ -691,7 +784,7 @@ public class Robot extends TimedRobot {
 
   public void moveUpperArm(double speed) {
     if (speed > 0) {
-      if (isUpperArmZero) {
+      if (isUpperArmZero || isOverExtended) {
         _upperArm.set(0);
       } else {
         _upperArm.set(speed);
@@ -729,7 +822,7 @@ public class Robot extends TimedRobot {
         _foreArm.set(speed);
       }
     } else if (speed > 0) {
-      if (isForeArmMax) {
+      if (isForeArmMax || isOverExtended) {
         _foreArm.set(0);
       } else {
         _foreArm.set(speed);
@@ -786,7 +879,7 @@ public class Robot extends TimedRobot {
     // m_robotDrive.driveCartesian(-xbox.getLeftY(), -xbox.getLeftX(), xbox.getRightX(), 0.0);
     
     // FIELD-ORIENTED DRIVE
-    // m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ(), gyro.getAngle()+180);
+    // m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ(), gyro.getRotation2d());
 
     // ROBOT-ORIENTED DRIVE
     m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ());
