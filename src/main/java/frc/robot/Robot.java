@@ -33,6 +33,7 @@ import edu.wpi.first.wpilibj.Filesystem.*;
 import edu.wpi.first.wpilibj.interfaces.Gyro;
 import edu.wpi.first.wpilibj.shuffleboard.Shuffleboard;
 import edu.wpi.first.wpilibj.motorcontrol.Spark;
+import edu.wpi.first.math.filter.SlewRateLimiter;
 */
 
 public class Robot extends TimedRobot {
@@ -57,13 +58,14 @@ public class Robot extends TimedRobot {
                  isIntakeZero, isForeArmMax, 
                  isUpperArmMax, isIntakeMax,
                  isOverExtended,
-                 isChargeTipped, isCommunityLeft;
+                 isChargeTipped, isChargeLevel;
 
   private final XboxController xbox = new XboxController(2);
 
   private MecanumDrive m_robotDrive;
   private Joystick l_stick = new Joystick(0);
   private Joystick r_stick = new Joystick(1);
+
   public Timer auto_timer = new Timer();
 
   NetworkTable table = NetworkTableInstance.getDefault().getTable("limelight");
@@ -71,6 +73,9 @@ public class Robot extends TimedRobot {
   NetworkTableEntry ty = table.getEntry("ty");
   NetworkTableEntry ta = table.getEntry("ta");
   
+  private static final String kNCare = "No, We Don't Care";
+  private static final String kYCare = "Yes, We Care";
+
   private static final String kNDockCubeL = "No Dock Cube L of C";
   private static final String kNDockCubeR = "No Dock Cube R of C";
   private static final String kNDockMisc = "No Dock Middle";
@@ -86,13 +91,18 @@ public class Robot extends TimedRobot {
   private static final String kDriveAuto = "Drive Auto";
   private static final String kDefaultAuto = "Default Auto";
   private String m_autoSelected;
-  private final SendableChooser<String> m_chooser = new SendableChooser<>();
+  private String m_OESelected;
+  public boolean OECheck = false;
+  private final SendableChooser<String> m_autoChooser = new SendableChooser<>();
+  private final SendableChooser<String> m_overExtensionChooser = new SendableChooser<>();
+
 
   @Override
   public void robotInit() {
     Kp = -0.035f;
     KpYaw = -0.075f;
-    KpPitch = -0.03f;
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+
     min_command = 0.05f;
     min_commandYaw = 0.075f;
     min_commandPitch = 0.02f;
@@ -116,22 +126,28 @@ public class Robot extends TimedRobot {
     m_robotDrive = new MecanumDrive(_driveFrontLeft, _driveRearLeft, _driveFrontRight, _driveRearRight);
     table.getEntry("ledMode").setNumber(1);
 
-    m_chooser.addOption("No Dock Cube L of C", kNDockCubeL);
-    m_chooser.addOption("No Dock Cube R of C", kNDockCubeR);
-    m_chooser.addOption("No Dock Middle", kNDockMisc);
-    m_chooser.addOption("No Dock Cone L of C", kNDockConeL);
-    m_chooser.addOption("No Dock Cone R of C", kNDockConeR);
-    m_chooser.addOption("Dock Cube L of C", kYDockCubeL);
-    m_chooser.addOption("Dock Cube C", kYDockCubeC);
-    m_chooser.addOption("Dock Cube R of C", kYDockCubeR);
-    m_chooser.addOption("Dock Cone L of C", kYDockConeL);
-    m_chooser.addOption("Dock Cone C", kYDockConeC);
-    m_chooser.addOption("Dock Cone R of C", kYDockConeR);
+    m_overExtensionChooser.addOption("Yes, We Care", kYCare);
+    m_overExtensionChooser.addOption("No, We Don't Care", kNCare);
+    m_overExtensionChooser.setDefaultOption("Default (No)", kNCare);
+    SmartDashboard.putData("Anti-Overextension Code?", m_overExtensionChooser);
+    SmartDashboard.putNumber("chargeBalance Power", -0.03f);
 
-    m_chooser.addOption("Drive Auto", kDriveAuto);
+    m_autoChooser.addOption("No Dock Cube L of C", kNDockCubeL);
+    m_autoChooser.addOption("No Dock Cube R of C", kNDockCubeR);
+    m_autoChooser.addOption("No Dock Middle", kNDockMisc);
+    m_autoChooser.addOption("No Dock Cone L of C", kNDockConeL);
+    m_autoChooser.addOption("No Dock Cone R of C", kNDockConeR);
+    m_autoChooser.addOption("Dock Cube L of C", kYDockCubeL);
+    m_autoChooser.addOption("Dock Cube C", kYDockCubeC);
+    m_autoChooser.addOption("Dock Cube R of C", kYDockCubeR);
+    m_autoChooser.addOption("Dock Cone L of C", kYDockConeL);
+    m_autoChooser.addOption("Dock Cone C", kYDockConeC);
+    m_autoChooser.addOption("Dock Cone R of C", kYDockConeR);
 
-    m_chooser.setDefaultOption("Default Auto", kDefaultAuto);
-    SmartDashboard.putData("Auto choices", m_chooser);
+    m_autoChooser.addOption("Drive Auto", kDriveAuto);
+
+    m_autoChooser.setDefaultOption("Default Auto", kDefaultAuto);
+    SmartDashboard.putData("Auto choices", m_autoChooser);
   }
   
   @Override
@@ -139,8 +155,12 @@ public class Robot extends TimedRobot {
     auto_timer.reset();
     auto_timer.start();
     gyro.reset();
-    m_autoSelected = m_chooser.getSelected();
+    m_autoSelected = m_autoChooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
+
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+    isChargeTipped = false;
+    isChargeLevel = false;
   }
 
   @Override
@@ -156,12 +176,12 @@ public class Robot extends TimedRobot {
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
-          moveUpperArm(-1);
+          moveUpperArm(-0.75);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
-          moveUpperArm(-1);
+          moveUpperArm(-0.75);
 
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -412,12 +432,12 @@ public class Robot extends TimedRobot {
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
-          moveUpperArm(-1);
+          moveUpperArm(-0.75);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
-          moveUpperArm(-1);
+          moveUpperArm(-0.75);
 
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -429,16 +449,16 @@ public class Robot extends TimedRobot {
           m_robotDrive.driveCartesian(-0.25, 0, 0);
           grabGamePiece(0, "zero");
           moveForeArm(-1);
-          moveUpperArm(1);
+          moveUpperArm(0.75);
 
         } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           grabGamePiece(0, "zero");
-          moveForeArm(0);
-          moveUpperArm(0);
+          moveForeArm(-0.4);
+          moveUpperArm(0.50);
           if (gyro.getPitch() < -10) {
             isChargeTipped = true;
-          } if (gyro.getPitch() > 10) { // TODO: this probably won't work as intended on an actual charging station, but three points is meh
-            isCommunityLeft = true;
+          } if (gyro.getPitch() > 1) {
+            isChargeLevel = true;
           }
           
           yaw = gyro.getYaw();
@@ -453,9 +473,9 @@ public class Robot extends TimedRobot {
             yaw_adjust = -0.5;
           }
 
-          if (!isChargeTipped && !isCommunityLeft) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
-          if (isChargeTipped && !isCommunityLeft) m_robotDrive.driveCartesian(-0.3, 0, -yaw_adjust);
-          if (isChargeTipped && isCommunityLeft) chargeBalance();
+          if (!isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
+          // if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.35, 0, -yaw_adjust);
+          if (isChargeTipped) chargeBalance();
         } else {
           grabGamePiece(0, "zero");
           moveForeArm(0);
@@ -536,16 +556,17 @@ public class Robot extends TimedRobot {
     } else if (0.670 < UA && UA <= 0.679) { // 44" - 42"
       if (FA < 0.618) {isOverExtended = true;}
     }
+
     // between 42" and 38", FA can be any value.
     
     SmartDashboard.putBoolean("isOverExtended", isOverExtended);
   }
 
   public void chargeBalance() {
-    _driveFrontLeft.setNeutralMode(NeutralMode.Coast);
-    _driveFrontRight.setNeutralMode(NeutralMode.Coast);
-    _driveRearLeft.setNeutralMode(NeutralMode.Coast);
-    _driveRearRight.setNeutralMode(NeutralMode.Coast);
+    // _driveFrontLeft.setNeutralMode(NeutralMode.Coast);
+    // _driveFrontRight.setNeutralMode(NeutralMode.Coast);
+    // _driveRearLeft.setNeutralMode(NeutralMode.Coast);
+    // _driveRearRight.setNeutralMode(NeutralMode.Coast);
 
     yaw = gyro.getYaw() % 360;
     pitch = gyro.getPitch();
@@ -640,7 +661,7 @@ public class Robot extends TimedRobot {
   }
 
   public void moveUpperArm(double speed) { // RELY ON THAT CLUTCH BABY
-      if (isOverExtended && speed > 0) {
+      if ((isOverExtended && OECheck) && speed > 0) {
         _upperArm.set(0);
       }
       _upperArm.set(speed);
@@ -664,7 +685,7 @@ public class Robot extends TimedRobot {
         _foreArm.set(speed);
       }
     } else if (speed > 0) {
-      if (isForeArmMax || isOverExtended) {
+      if (isForeArmMax || (isOverExtended && OECheck)) {
         _foreArm.set(0);
       } else {
         _foreArm.set(speed);
@@ -679,22 +700,22 @@ public class Robot extends TimedRobot {
     double zeroCone = zeroItendon;
     switch (piece) {
       case "cube":
-        if (speed < 0 && _Itendon.get() > zeroCube) {
+        if (_Itendon.get() > zeroCube && !isIntakeZero) {
           _intake.set(-speed);
         } else {
           _intake.set(0);
         }
         break;
       case "cone":
-        if (speed < 0 && _Itendon.get() > zeroCone) {
+        if (_Itendon.get() > zeroCone && !isIntakeZero) {
            _intake.set(-speed);
         } else {
           _intake.set(0);
         }
         break;
-      case "zero":
+      case "zero": // closed
         if (!isIntakeZero) {
-          _intake.set(speed);
+          _intake.set(-speed);
         } else {
           _intake.set(0);
         }
@@ -714,6 +735,18 @@ public class Robot extends TimedRobot {
   }
 
   @Override
+  public void teleopInit() {
+    m_OESelected = m_overExtensionChooser.getSelected();
+    if (m_OESelected == kYCare) {
+      OECheck = true;
+    } else {
+      OECheck = false;
+    }
+
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+  }
+
+  @Override
   public void teleopPeriodic() {
     // Use the L joystick X axis for lateral movement, Y axis for forward
     // movement, and R joystick Z axis for rotation.
@@ -722,6 +755,9 @@ public class Robot extends TimedRobot {
     
     // FIELD-ORIENTED DRIVE
     // m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ(), gyro.getRotation2d());
+
+    // SLEW-FILTERED DRIVE (for top-heavy or powerful drive bots)
+    // m_robotDrive.driveCartesian(l_filter.calculate(-l_stick.getY()), l_stick.getX(), r_filter.calculate(r_stick.getZ()));
 
     // ROBOT-ORIENTED DRIVE
     m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ());
