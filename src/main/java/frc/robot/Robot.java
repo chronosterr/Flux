@@ -78,7 +78,8 @@ public class Robot extends TimedRobot {
 
   private static final String kNDockCubeL = "No Dock Cube L of C";
   private static final String kNDockCubeR = "No Dock Cube R of C";
-  private static final String kNDockMisc = "No Dock Middle";
+  private static final String kNDockCubeMisc = "No Dock Cube Straight";
+  private static final String kNDockConeMisc = "No Dock Cone Straight";
   private static final String kNDockConeL = "No Dock Cone L of C";
   private static final String kNDockConeR = "No Dock Cone R of C";
   private static final String kYDockCubeL = "Dock Cube L of C";
@@ -134,7 +135,8 @@ public class Robot extends TimedRobot {
 
     m_autoChooser.addOption("No Dock Cube L of C", kNDockCubeL);
     m_autoChooser.addOption("No Dock Cube R of C", kNDockCubeR);
-    m_autoChooser.addOption("No Dock Middle", kNDockMisc);
+    m_autoChooser.addOption("No Dock Cube Straight", kNDockCubeMisc);
+    m_autoChooser.addOption("No Dock Cone Straight", kNDockConeMisc);
     m_autoChooser.addOption("No Dock Cone L of C", kNDockConeL);
     m_autoChooser.addOption("No Dock Cone R of C", kNDockConeR);
     m_autoChooser.addOption("Dock Cube L of C", kYDockCubeL);
@@ -340,7 +342,7 @@ public class Robot extends TimedRobot {
         }
         break;
       
-      case kNDockMisc: // drops cube atm
+      case kNDockCubeMisc:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(1, "cube");
 
@@ -361,17 +363,108 @@ public class Robot extends TimedRobot {
           moveUpperArm(0);
 
         } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, -.6, 0);
-          yaw_adjust = 0;
+          m_robotDrive.driveCartesian(-0.25, 0, 0);
           grabGamePiece(0, "zero");
-          moveForeArm(-0.75);
+          moveForeArm(-1);
           moveUpperArm(1);
 
         } else if (8.5 < auto_timer.get() && auto_timer.get() < 15.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
+          
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+
+          m_robotDrive.driveCartesian(-0.2, 0, -yaw_adjust); // TODO: How far does this back up if it has 6.5 seconds?
+          yaw_adjust = 0;
+
         }  else {
+          m_robotDrive.driveCartesian(0, 0, 0);
+          moveUpperArm(0);
+          moveForeArm(0);
+          grabGamePiece(0, "zero");
+        }
+        break;
+      
+      case kNDockConeMisc:
+        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+          grabGamePiece(1, "cone");
+
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 7.0) {
+          grabGamePiece(0, "zero");
+          moveForeArm(1);
+          moveUpperArm(-1);
+
+        } else if (7.0 < auto_timer.get() && auto_timer.get() < 9.0) {
+          limelightTarget(x, y);
+          moveForeArm(0);
+          moveUpperArm(0);
+
+        } else if (9.0 < auto_timer.get() && auto_timer.get() < 9.5) {
+          limelightTarget(x, y);
+          moveForeArm(-1);
+
+        } else if (9.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+          limelightTarget(x, y);
+          grabGamePiece(0.5, "open");
+          moveForeArm(-0.8);
+
+        } else if (10.0 < auto_timer.get() && auto_timer.get() < 11.0) {
+          grabGamePiece(1, "open");
+          if (10.0 < auto_timer.get() && auto_timer.get() < 10.5) {
+            moveForeArm(1);
+          } else {
+            moveForeArm(-1);
+          }
+          moveUpperArm(1);
+          table.getEntry("ledMode").setNumber(1); // turns off limelight LED
+
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+          
+          m_robotDrive.driveCartesian(-0.25, 0, -yaw_adjust);
+          yaw_adjust = 0;
+
+        } else if (11.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          moveForeArm(-1);
+          moveUpperArm(1);
+          grabGamePiece(0, "zero");
+
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+    
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+
+          m_robotDrive.driveCartesian(-0.25, 0, -yaw_adjust);
+          yaw_adjust = 0;
+      
+        } else {
           m_robotDrive.driveCartesian(0, 0, 0);
           moveUpperArm(0);
           moveForeArm(0);
@@ -387,37 +480,62 @@ public class Robot extends TimedRobot {
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(1, "cone");
 
-        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+        } else if (1.0 < auto_timer.get() && auto_timer.get() < 7.0) {
           grabGamePiece(0, "zero");
           moveForeArm(1);
-          moveUpperArm(-0.75);
+          moveUpperArm(-1);
 
-        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          table.getEntry("pipeline").setNumber(0);
+        } else if (7.0 < auto_timer.get() && auto_timer.get() < 9.0) {
           limelightTarget(x, y);
-          moveForeArm(1);
-          moveUpperArm(-0.75);
-
-        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          grabGamePiece(1, "open");
           moveForeArm(0);
           moveUpperArm(0);
 
-        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, 0, 0);
-          grabGamePiece(0, "zero");
+        } else if (9.0 < auto_timer.get() && auto_timer.get() < 9.5) {
+          limelightTarget(x, y);
           moveForeArm(-1);
-          moveUpperArm(1);
 
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 10.0) {
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
-          m_robotDrive.driveCartesian(-1, 0, 0);
+        } else if (9.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+          limelightTarget(x, y);
+          grabGamePiece(0.5, "open");
+          moveForeArm(-0.8);
 
         } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-          chargeBalance();
+          grabGamePiece(0, "zero");
+          if (10.0 < auto_timer.get() && auto_timer.get() < 10.5) {
+            moveForeArm(1);
+          } else {
+            moveForeArm(-0.4);
+          }
+          moveUpperArm(0.5);
+          table.getEntry("ledMode").setNumber(1); // turns off limelight LED
+
+          if (gyro.getPitch() < -10) {
+            isChargeTipped = true;
+          } if (gyro.getPitch() > 1) {
+            isChargeLevel = true;
+          }
+          
+          yaw = gyro.getYaw();
+
+          if (Math.abs(yaw) > min_commandYaw) {
+            yaw_adjust = KpYaw * yaw;
+          }
+
+          if (yaw_adjust > 0.5) {
+            yaw_adjust = 0.5;
+          } else if (yaw_adjust < -0.5) {
+            yaw_adjust = -0.5;
+          }
+
+          if (!isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
+          // if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.35, 0, -yaw_adjust);
+          if (isChargeTipped) chargeBalance();
+        } else {
+          grabGamePiece(0, "zero");
+          moveForeArm(0);
+          moveUpperArm(0);
+          m_robotDrive.driveCartesian(0, 0, 0);
+
         }
         break;
       
@@ -445,7 +563,7 @@ public class Robot extends TimedRobot {
           moveForeArm(0);
           moveUpperArm(0);
 
-        } else if (7.5 < auto_timer.get() && auto_timer.get() < 10.0) { // TODO: INSUFFICIENT TIME TO LOWER -- WHY IS FOREARM STILL MOVING? JUST TIME IT + ADD SEPARATE IF/ELSE BELOW?
+        } else if (7.5 < auto_timer.get() && auto_timer.get() < 10.0) {
           m_robotDrive.driveCartesian(-0.25, 0, 0);
           grabGamePiece(0, "zero");
           moveForeArm(-1);
@@ -547,13 +665,12 @@ public class Robot extends TimedRobot {
     isOverExtended = false;
     double UA = _UAtendon.get();
     double FA = _FAtendon.get();
-    // TODO: Due to broken potentiometer, these need to be tested.
 
-    if (UA <= 0.657) { // 48" - 46"
+    if (UA <= 0.596) { // 48" - 46"
       if (FA < 0.682) {isOverExtended = true;}
-    } else if (0.657 < UA && UA <= 0.670) { // 46" - 44"
+    } else if (0.596 < UA && UA <= 0.609) { // 46" - 44"
       if (FA < 0.631) {isOverExtended = true;}
-    } else if (0.670 < UA && UA <= 0.679) { // 44" - 42"
+    } else if (0.609 < UA && UA <= 0.618) { // 44" - 42"
       if (FA < 0.618) {isOverExtended = true;}
     }
 
@@ -756,7 +873,7 @@ public class Robot extends TimedRobot {
     // FIELD-ORIENTED DRIVE
     // m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ(), gyro.getRotation2d());
 
-    // SLEW-FILTERED DRIVE (for top-heavy or powerful drive bots)
+    // SLEW-FILTERED DRIVE (for top-heavy or powerful drive bots. Too slow on Flux)
     // m_robotDrive.driveCartesian(l_filter.calculate(-l_stick.getY()), l_stick.getX(), r_filter.calculate(r_stick.getZ()));
 
     // ROBOT-ORIENTED DRIVE
@@ -837,23 +954,6 @@ public class Robot extends TimedRobot {
         gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
       }
       chargeBalance();
-    }
-
-    if (l_stick.getRawButton(11)) { // TODO: REMOVE AFTER DEBUGGING (or keep idc might be useful)
-      yaw = gyro.getYaw() % 360;
-      if (Math.abs(yaw + 180) > min_commandYaw) {
-        yaw_adjust = KpYaw * yaw;
-      }
-
-      if (Math.abs(yaw_adjust) > 0.5) {
-        if (yaw_adjust < 0) {
-          yaw_adjust = -0.5;
-        } else {
-          yaw_adjust = 0.5;
-        }
-      }
-
-      m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
     }
   }
 }
