@@ -46,7 +46,7 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.657; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
 
@@ -102,7 +102,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     Kp = -0.035f;
     KpYaw = -0.075f;
-    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
 
     min_command = 0.05f;
     min_commandYaw = 0.075f;
@@ -131,7 +131,7 @@ public class Robot extends TimedRobot {
     m_overExtensionChooser.addOption("No, We Don't Care", kNCare);
     m_overExtensionChooser.setDefaultOption("Default (No)", kNCare);
     SmartDashboard.putData("Anti-Overextension Code?", m_overExtensionChooser);
-    SmartDashboard.putNumber("chargeBalance Power", -0.03f);
+    SmartDashboard.putNumber("chargeBalance Power", -0.025f);
 
     m_autoChooser.addOption("No Dock Cube L of C", kNDockCubeL);
     m_autoChooser.addOption("No Dock Cube R of C", kNDockCubeR);
@@ -160,7 +160,7 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_autoChooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
 
-    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
     isChargeTipped = false;
     isChargeLevel = false;
   }
@@ -544,38 +544,42 @@ public class Robot extends TimedRobot {
         break;
       
       case kYDockCubeC:
-        if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
-          grabGamePiece(1, "cube");
+        // if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+        //   grabGamePiece(1, "cube");
 
-        } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
-          grabGamePiece(0, "zero");
-          moveForeArm(1);
-          moveUpperArm(-0.75);
+        // } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+        //   grabGamePiece(0, "zero");
+        //   moveForeArm(1);
+        //   moveUpperArm(-0.75);
 
-        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-          m_robotDrive.driveCartesian(0.25, 0, 0);
-          moveForeArm(1);
-          moveUpperArm(-0.75);
+        // } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+        //   m_robotDrive.driveCartesian(0.25, 0, 0);
+        //   moveForeArm(1);
+        //   moveUpperArm(-0.75);
 
-        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
-          m_robotDrive.driveCartesian(0, 0, 0);
-          grabGamePiece(1, "open");
-          moveForeArm(0);
-          moveUpperArm(0);
+        // } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+        //   m_robotDrive.driveCartesian(0, 0, 0);
+        //   grabGamePiece(1, "open");
+        //   moveForeArm(0);
+        //   moveUpperArm(0);
 
-        } else if (7.5 < auto_timer.get() && auto_timer.get() < 10.0) {
-          m_robotDrive.driveCartesian(-0.25, 0, 0);
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(0.75);
+        // } else if (7.5 < auto_timer.get() && auto_timer.get() < 10.0) {
+        //   m_robotDrive.driveCartesian(-0.25, 0, 0);
+        //   grabGamePiece(0, "zero");
+        //   moveForeArm(-1);
+        //   moveUpperArm(0.75);
 
-        } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+        // } else 
+        if (5.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          SmartDashboard.putBoolean("isChargeTipped", isChargeTipped);
+          SmartDashboard.putBoolean("isChargeLevel", isChargeLevel);
+
           grabGamePiece(0, "zero");
           moveForeArm(-0.4);
           moveUpperArm(0.50);
           if (gyro.getPitch() < -10) {
             isChargeTipped = true;
-          } if (gyro.getPitch() > 1) {
+          } if (gyro.getPitch() > 3) {
             isChargeLevel = true;
           }
           
@@ -592,7 +596,7 @@ public class Robot extends TimedRobot {
           }
 
           if (!isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
-          // if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.35, 0, -yaw_adjust);
+          // if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.3, 0, -yaw_adjust);
           if (isChargeTipped) chargeBalance();
         } else {
           grabGamePiece(0, "zero");
@@ -778,21 +782,23 @@ public class Robot extends TimedRobot {
   }
 
   public void moveUpperArm(double speed) { // RELY ON THAT CLUTCH BABY
-      if ((isOverExtended && OECheck) && speed > 0) {
+    if (speed > 0) {  
+      if ((isOverExtended && OECheck)) {
+          _upperArm.set(0);
+        } else {
+        _upperArm.set(speed);
+        }
+
+      } else if (speed < 0) {
+        if (isUpperArmMax && OECheck) {
+          _upperArm.set(0);
+        } else {
+          _upperArm.set(speed);
+        }
+      } else {
         _upperArm.set(0);
       }
-      _upperArm.set(speed);
-
-    // } else if (speed < 0) {
-    //   if (isUpperArmMax) {
-    //     _upperArm.set(0);
-    //   } else {
-    //     _upperArm.set(speed);
-    //   }
-    // } else {
-    //   _upperArm.set(0);
-    // }
-  }
+    }
 
   public void moveForeArm(double speed) {
     if (speed < 0) {
@@ -860,7 +866,7 @@ public class Robot extends TimedRobot {
       OECheck = false;
     }
 
-    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
   }
 
   @Override
