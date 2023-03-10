@@ -946,13 +946,13 @@ public class Robot extends TimedRobot {
     } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
       table.getEntry("pipeline").setNumber(2);
       limelightTarget(x, y);
-    } else if (r_stick.getRawButton(1)) { // APRILTAG targeting
-      table.getEntry("pipeline").setNumber(1);
-      aprilTagsTarget(x, y);
+    } else if (r_stick.getRawButtonPressed(1)) { // snapshot taker (requires pit testing)
+      table.getEntry("snapshot").setNumber(1);
     } else if (l_stick.getRawButton(2)) {
       table.getEntry("ledMode").setNumber(3);
     } else {
       table.getEntry("ledMode").setNumber(1);
+      table.getEntry("snapshot").setNumber(0);
     }
     
     if (r_stick.getRawButton(2)) {
