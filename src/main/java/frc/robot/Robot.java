@@ -21,6 +21,7 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
+import edu.wpi.first.wpilibj.AnalogInput;
 
 
 /*            UNUSED IMPORTS
@@ -37,7 +38,7 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 */
 
 public class Robot extends TimedRobot {
-
+// TODO: Optimize. (moveUpperArm, for example)
   WPI_TalonSRX _driveFrontLeft = new WPI_TalonSRX(4);
   WPI_TalonSRX _driveRearLeft = new WPI_TalonSRX(2);
   WPI_TalonSRX _driveFrontRight = new WPI_TalonSRX(1);
@@ -49,6 +50,7 @@ public class Robot extends TimedRobot {
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
+  AnalogInput _intakeDetector = new AnalogInput(3);
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
 
@@ -167,6 +169,9 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
+    // TODO: Cone auto doesn't function with the type of reflective tape used. Find new reflective tape and add 2 more cone autos depending on whether you're on the close or far side (two sets of pipes next to each other!!)
+    // TODO: Dock auto is not currently possible. (Possibly) remake charge station and find a way to stay still with mecanum wheels!
+
     checkTendons();
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
@@ -180,7 +185,7 @@ public class Robot extends TimedRobot {
           moveForeArm(1);
           moveUpperArm(-0.75);
 
-        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
           m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArm(1);
           moveUpperArm(-0.75);
@@ -385,7 +390,7 @@ public class Robot extends TimedRobot {
             yaw_adjust = -0.5;
           }
 
-          m_robotDrive.driveCartesian(-0.2, 0, -yaw_adjust); // TODO: How far does this back up if it has 6.5 seconds?
+          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
           yaw_adjust = 0;
 
         }  else {
@@ -703,7 +708,11 @@ public class Robot extends TimedRobot {
 
     
     if (yaw_adjust == 0 && pitch_adjust == 0) {
-      m_robotDrive.driveCartesian(0, 0, 0);
+      _driveFrontLeft.set(-0.25);
+      _driveFrontRight.set(-0.25);
+      _driveRearLeft.set(0.25);
+      _driveRearRight.set(0.25);
+
       _driveFrontLeft.setNeutralMode(NeutralMode.Brake);
       _driveFrontRight.setNeutralMode(NeutralMode.Brake);
       _driveRearLeft.setNeutralMode(NeutralMode.Brake);
@@ -759,6 +768,10 @@ public class Robot extends TimedRobot {
     } else if (yaw_adjust < -0.5) {
       yaw_adjust = -0.5;
     }
+
+    SmartDashboard.putNumber("x_adjust", x_adjust);
+    SmartDashboard.putNumber("y_adjust", y_adjust);
+    SmartDashboard.putNumber("yaw_adjust", yaw_adjust);
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), -x_adjust + l_stick.getX(), -yaw_adjust + r_stick.getX());
   }
 
@@ -800,7 +813,7 @@ public class Robot extends TimedRobot {
       }
     }
 
-  public void moveForeArm(double speed) {
+  public void moveForeArm(double speed) { // TODO: add double PotValue
     if (speed < 0) {
       if (isForeArmZero) {
         _foreArm.set(0);
@@ -818,7 +831,7 @@ public class Robot extends TimedRobot {
     }
   }
 
-  public void grabGamePiece(double speed, String piece) {
+  public void grabGamePiece(double speed, String piece) { // TODO: Add rumble to Xbox when grabbed piece detected (xbox.setRumble())
     double zeroCube = 0.745;
     double zeroCone = zeroItendon;
     switch (piece) {
@@ -961,5 +974,7 @@ public class Robot extends TimedRobot {
       }
       chargeBalance();
     }
+    
+    SmartDashboard.putNumber("Intake Detector Value", _intakeDetector.getVoltage());
   }
 }
