@@ -22,6 +22,12 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.AnalogInput;
+import edu.wpi.first.wpilibj.I2C;
+import edu.wpi.first.wpilibj.util.Color;
+
+import com.revrobotics.ColorSensorV3;
+import com.revrobotics.ColorMatchResult;
+import com.revrobotics.ColorMatch;
 
 
 /*            UNUSED IMPORTS
@@ -53,6 +59,12 @@ public class Robot extends TimedRobot {
   AnalogInput _intakeDetector = new AnalogInput(3);
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
+  private final I2C.Port i2cPort = I2C.Port.kOnboard;
+  private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
+  private final ColorMatch m_colorMatcher = new ColorMatch();
+
+  private final Color kYellowTarget = new Color(0.361, 0.524, 0.113);
+  private final Color kPurpleTarget = new Color(0.074, 0.051, 0.164);
 
   double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos, yaw_adjust, yaw, pitch_adjust, pitch;
   float Kp, min_command, KpYaw, min_commandYaw, KpPitch, min_commandPitch;
@@ -98,7 +110,6 @@ public class Robot extends TimedRobot {
   public boolean OECheck = false;
   private final SendableChooser<String> m_autoChooser = new SendableChooser<>();
   private final SendableChooser<String> m_overExtensionChooser = new SendableChooser<>();
-
 
   @Override
   public void robotInit() {
@@ -152,6 +163,9 @@ public class Robot extends TimedRobot {
 
     m_autoChooser.setDefaultOption("Default Auto", kDefaultAuto);
     SmartDashboard.putData("Auto choices", m_autoChooser);
+
+    m_colorMatcher.addColorMatch(kYellowTarget);
+    m_colorMatcher.addColorMatch(kPurpleTarget);
   }
   
   @Override
@@ -916,6 +930,26 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Yaw", gyro.getYaw());
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
     SmartDashboard.putNumber("Roll", gyro.getRoll());
+
+    Color detectedColor = m_colorSensor.getColor();
+    String colorString;
+    ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+
+    if (match.color == kYellowTarget) {
+      colorString = "Yellow";
+    } else if (match.color == kPurpleTarget) {
+      colorString = "Purple";
+    } else {
+      colorString = "Unknown";
+    }
+
+    SmartDashboard.putNumber("Red", detectedColor.red);
+    SmartDashboard.putNumber("Green", detectedColor.green);
+    SmartDashboard.putNumber("Blue", detectedColor.blue);
+    SmartDashboard.putNumber("Confidence", match.confidence);
+    SmartDashboard.putString("Detected Color", colorString);
+
+
 
     // UPPER ARM CONTROL
     if (xbox.getLeftY() > .2) {
