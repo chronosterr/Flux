@@ -59,12 +59,9 @@ public class Robot extends TimedRobot {
   AnalogInput _intakeDetector = new AnalogInput(3);
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
-  private final I2C.Port i2cPort = I2C.Port.kOnboard;
-  private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
-  private final ColorMatch m_colorMatcher = new ColorMatch();
-
-  private final Color kYellowTarget = new Color(0.361, 0.524, 0.113);
-  private final Color kPurpleTarget = new Color(0.074, 0.051, 0.164);
+  // private final I2C.Port i2cPort = I2C.Port.kOnboard;
+  // private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
+  // private final ColorMatch m_colorMatcher = new ColorMatch();
 
   double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos, yaw_adjust, yaw, pitch_adjust, pitch;
   float Kp, min_command, KpYaw, min_commandYaw, KpPitch, min_commandPitch;
@@ -163,9 +160,6 @@ public class Robot extends TimedRobot {
 
     m_autoChooser.setDefaultOption("Default Auto", kDefaultAuto);
     SmartDashboard.putData("Auto choices", m_autoChooser);
-
-    m_colorMatcher.addColorMatch(kYellowTarget);
-    m_colorMatcher.addColorMatch(kPurpleTarget);
   }
   
   @Override
@@ -931,23 +925,29 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
     SmartDashboard.putNumber("Roll", gyro.getRoll());
 
-    Color detectedColor = m_colorSensor.getColor();
-    String colorString;
-    ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
+    // Color detectedColor = m_colorSensor.getColor();
+    // String colorString;
+    // ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
 
-    if (match.color == kYellowTarget) {
-      colorString = "Yellow";
-    } else if (match.color == kPurpleTarget) {
-      colorString = "Purple";
-    } else {
-      colorString = "Unknown";
-    }
+    // int proximity = m_colorSensor.getProximity();
+    // int red = m_colorSensor.getRed();
+    // int blue = m_colorSensor.getBlue();
+    // int green = m_colorSensor.getGreen();
 
-    SmartDashboard.putNumber("Red", detectedColor.red);
-    SmartDashboard.putNumber("Green", detectedColor.green);
-    SmartDashboard.putNumber("Blue", detectedColor.blue);
-    SmartDashboard.putNumber("Confidence", match.confidence);
-    SmartDashboard.putString("Detected Color", colorString);
+    // if (green > 2000) {
+    //   colorString = "Yellow";
+    // } else if (blue > 180) {
+    //   colorString = "Purple";
+    // } else {
+    //   colorString = "Unknown";
+    // }
+    
+    // SmartDashboard.putNumber("Red", red);
+    // SmartDashboard.putNumber("Green", green);
+    // SmartDashboard.putNumber("Blue", blue);
+    // SmartDashboard.putNumber("Proximity", proximity);
+    // SmartDashboard.putNumber("Confidence", match.confidence);
+    // SmartDashboard.putString("Detected Color", colorString);
 
 
 
