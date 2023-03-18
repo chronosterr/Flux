@@ -21,13 +21,6 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
-import edu.wpi.first.wpilibj.AnalogInput;
-import edu.wpi.first.wpilibj.I2C;
-import edu.wpi.first.wpilibj.util.Color;
-
-import com.revrobotics.ColorSensorV3;
-import com.revrobotics.ColorMatchResult;
-import com.revrobotics.ColorMatch;
 
 
 /*            UNUSED IMPORTS
@@ -56,15 +49,8 @@ public class Robot extends TimedRobot {
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
-  AnalogInput _intakeDetector = new AnalogInput(3);
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
-  private final I2C.Port i2cPort = I2C.Port.kOnboard;
-  private final ColorSensorV3 m_colorSensor = new ColorSensorV3(i2cPort);
-  private final ColorMatch m_colorMatcher = new ColorMatch();
-
-  private final Color kYellowTarget = new Color(0.361, 0.524, 0.113);
-  private final Color kPurpleTarget = new Color(0.074, 0.051, 0.164);
 
   double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos, yaw_adjust, yaw, pitch_adjust, pitch;
   float Kp, min_command, KpYaw, min_commandYaw, KpPitch, min_commandPitch;
@@ -163,9 +149,6 @@ public class Robot extends TimedRobot {
 
     m_autoChooser.setDefaultOption("Default Auto", kDefaultAuto);
     SmartDashboard.putData("Auto choices", m_autoChooser);
-
-    m_colorMatcher.addColorMatch(kYellowTarget);
-    m_colorMatcher.addColorMatch(kPurpleTarget);
   }
   
   @Override
@@ -810,7 +793,7 @@ public class Robot extends TimedRobot {
 
   public void moveUpperArm(double speed) { // RELY ON THAT CLUTCH BABY
     if (speed > 0) {  
-      if ((isOverExtended && OECheck)) {
+      if (isOverExtended && OECheck) {
           _upperArm.set(0);
         } else {
         _upperArm.set(speed);
@@ -827,7 +810,7 @@ public class Robot extends TimedRobot {
       }
     }
 
-  public void moveForeArm(double speed) { // TODO: add double PotValue
+  public void moveForeArm(double speed) {
     if (speed < 0) {
       if (isForeArmZero) {
         _foreArm.set(0);
@@ -844,8 +827,85 @@ public class Robot extends TimedRobot {
       _foreArm.set(0);
     }
   }
+  public void moveUpperArmToPos(double speed, double desiredPos) { // speed should always be positive!
+    double UApos = _UAtendon.get();
+    if (desiredPos - UApos > 0) { // move UP
+      if (isUpperArmMax && OECheck) {
+        _upperArm.set(0);
+      } else {
+        _upperArm.set(-speed);
+      }
+    } else if (desiredPos - UApos > 0) { // move DOWN
+      if (isOverExtended && OECheck) {
+        _upperArm.set(0);
+      } else {
+        _upperArm.set(speed);
+      }
+    } else {
+      _upperArm.set(0);
+    }
+  }
 
-  public void grabGamePiece(double speed, String piece) { // TODO: Add rumble to Xbox when grabbed piece detected (xbox.setRumble())
+  public void moveForeArmToPos(double speed, double desiredPos) { // speed should always be positive!
+    double FApos = _FAtendon.get();
+    if (desiredPos - FApos < 0) { // move UP
+      if (isForeArmMax || (isOverExtended && OECheck)) {
+        _foreArm.set(0);
+      } else {
+        _foreArm.set(speed);
+      }
+    } else if (desiredPos - FApos > 0) { // move DOWN
+      if (isForeArmZero) {
+        _foreArm.set(0);
+      } else {
+        _foreArm.set(-speed);
+      }
+    } else {
+      _foreArm.set(0);
+    }
+  }
+
+  public void moveToIntakeFloor(double speed) {
+    double desiredUA = 0.618;
+    double desiredFA = 0.909;
+    double currUA = _UAtendon.get();
+    double currFA = _FAtendon.get();
+
+    if (currFA - 0.05 > desiredFA && currFA + 0.05 < desiredFA) { // sets a variance of 0.05 (Requires testing)
+      if (currUA - 0.05 > desiredUA && currUA + 0.05 < desiredUA) {
+        moveForeArm(0);
+        moveUpperArm(0);
+      } else {
+        moveUpperArmToPos(1, desiredUA);
+        moveForeArm(0);
+      }
+    } else {
+      moveForeArmToPos(1, desiredFA);
+      moveUpperArm(0);
+    }
+  }
+
+  public void moveToIntakeHP(double speed) {
+    double desiredUA = 0.537;
+    double desiredFA = 0.778;
+    double currUA = _UAtendon.get();
+    double currFA = _FAtendon.get();
+
+    if (currFA - 0.05 > desiredFA && currFA + 0.05 < desiredFA) { // sets a variance of 0.05 (Requires testing)
+      if (currUA - 0.05 > desiredUA && currUA + 0.05 < desiredUA) {
+        moveForeArm(0);
+        moveUpperArm(0);
+      } else {
+        moveUpperArmToPos(1, desiredUA);
+        moveForeArm(0);
+      }
+    } else {
+      moveForeArmToPos(1, desiredFA);
+      moveUpperArm(1); // Necessary? Safe? Faster?
+    }
+  }
+
+  public void grabGamePiece(double speed, String piece) {
     double zeroCube = 0.745;
     double zeroCone = zeroItendon;
     switch (piece) {
@@ -931,26 +991,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
     SmartDashboard.putNumber("Roll", gyro.getRoll());
 
-    Color detectedColor = m_colorSensor.getColor();
-    String colorString;
-    ColorMatchResult match = m_colorMatcher.matchClosestColor(detectedColor);
-
-    if (match.color == kYellowTarget) {
-      colorString = "Yellow";
-    } else if (match.color == kPurpleTarget) {
-      colorString = "Purple";
-    } else {
-      colorString = "Unknown";
-    }
-
-    SmartDashboard.putNumber("Red", detectedColor.red);
-    SmartDashboard.putNumber("Green", detectedColor.green);
-    SmartDashboard.putNumber("Blue", detectedColor.blue);
-    SmartDashboard.putNumber("Confidence", match.confidence);
-    SmartDashboard.putString("Detected Color", colorString);
-
-
-
     // UPPER ARM CONTROL
     if (xbox.getLeftY() > .2) {
       moveUpperArm(1);
@@ -967,6 +1007,16 @@ public class Robot extends TimedRobot {
       moveForeArm(1);
     } else {
       moveForeArm(0);
+    }
+
+    // MOVE ARMS TO INTAKE FROM FLOOR
+    if (xbox.getLeftTriggerAxis() > 0.50) {
+      moveToIntakeFloor(1);
+    }
+
+    // MOVE ARMS TO INTAKE FROM HUMAN PLAYER
+    if (xbox.getRightTriggerAxis() > 0.50) {
+      moveToIntakeHP(1);
     }
 
     // INTAKE CONTROL
@@ -1008,7 +1058,5 @@ public class Robot extends TimedRobot {
       }
       chargeBalance();
     }
-    
-    SmartDashboard.putNumber("Intake Detector Value", _intakeDetector.getVoltage());
   }
 }
