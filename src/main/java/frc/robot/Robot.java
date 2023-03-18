@@ -686,11 +686,6 @@ public class Robot extends TimedRobot {
   }
 
   public void chargeBalance() {
-    // _driveFrontLeft.setNeutralMode(NeutralMode.Coast);
-    // _driveFrontRight.setNeutralMode(NeutralMode.Coast);
-    // _driveRearLeft.setNeutralMode(NeutralMode.Coast);
-    // _driveRearRight.setNeutralMode(NeutralMode.Coast);
-
     yaw = gyro.getYaw() % 360;
     pitch = gyro.getPitch();
     yaw_adjust = 0.0f;
