@@ -21,6 +21,7 @@ import edu.wpi.first.networktables.NetworkTableEntry;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
+import edu.wpi.first.wpilibj.DigitalInput;
 
 
 /*            UNUSED IMPORTS
@@ -37,18 +38,21 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 */
 
 public class Robot extends TimedRobot {
-// TODO: Optimize. (moveUpperArm, for example)
   WPI_TalonSRX _driveFrontLeft = new WPI_TalonSRX(4);
   WPI_TalonSRX _driveRearLeft = new WPI_TalonSRX(2);
   WPI_TalonSRX _driveFrontRight = new WPI_TalonSRX(1);
   WPI_TalonSRX _driveRearRight = new WPI_TalonSRX(5);
   WPI_TalonSRX _intake = new WPI_TalonSRX(3);
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
+  WPI_TalonSRX _kickStand = new WPI_TalonSRX(7); // TODO: Update firmware and set up new Talon
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
+
+  DigitalInput _kickStandMax = new DigitalInput(0);
+  DigitalInput _kickStandZero = new DigitalInput(1);
 
   WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
 
@@ -936,7 +940,17 @@ public class Robot extends TimedRobot {
         table.getEntry("ledMode").setNumber(2);
         System.out.println("Error @ grabGamePiece - Neither cube nor cone selected!");
         break;
-      }
+    }
+  }
+
+  public void kickStand(double speed) {
+    if (speed > 0 && _kickStandMax.get()) {
+      _kickStand.set(speed);
+    } else if (speed < 0 && _kickStandZero.get()) {
+      _kickStand.set(speed);
+    } else {
+      _kickStand.set(0);
+    }
   }
 
   @Override
