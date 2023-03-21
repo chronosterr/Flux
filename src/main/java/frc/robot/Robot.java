@@ -49,7 +49,7 @@ public class Robot extends TimedRobot {
 
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
-  AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.559; double maxItendon = 0.850;
+  AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.540; double maxItendon = 0.850;
 
   DigitalInput _kickStandMax = new DigitalInput(0);
   DigitalInput _kickStandZero = new DigitalInput(1);
@@ -104,7 +104,7 @@ public class Robot extends TimedRobot {
   @Override
   public void robotInit() {
     Kp = -0.035f;
-    KpYaw = -0.075f;
+    KpYaw = -0.04f;
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
 
     min_command = 0.05f;
@@ -153,6 +153,8 @@ public class Robot extends TimedRobot {
 
     m_autoChooser.setDefaultOption("Default Auto", kDefaultAuto);
     SmartDashboard.putData("Auto choices", m_autoChooser);
+
+    gyro.reset();
   }
   
   @Override
@@ -183,12 +185,12 @@ public class Robot extends TimedRobot {
 
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
-          moveForeArm(1);
+          moveForeArmToPos(1, 0.630);
           moveUpperArm(-0.75);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
           m_robotDrive.driveCartesian(0.25, 0, 0);
-          moveForeArm(1);
+          moveForeArmToPos(1, 0.630);
           moveUpperArm(-0.75);
 
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
@@ -702,12 +704,14 @@ public class Robot extends TimedRobot {
       yaw_adjust = KpYaw * yaw; // desired max ???
     }
 
+    if (yaw_adjust > 0.5) {
+      yaw_adjust = 0.5;
+    } else if (yaw_adjust < -0.5) {
+      yaw_adjust = -0.5;
+    }
+
     
     if (yaw_adjust == 0 && pitch_adjust == 0) {
-      _driveFrontLeft.set(-0.25);
-      _driveFrontRight.set(-0.25);
-      _driveRearLeft.set(0.25);
-      _driveRearRight.set(0.25);
 
       _driveFrontLeft.setNeutralMode(NeutralMode.Brake);
       _driveFrontRight.setNeutralMode(NeutralMode.Brake);
@@ -834,7 +838,7 @@ public class Robot extends TimedRobot {
       } else {
         _upperArm.set(-speed);
       }
-    } else if (desiredPos - UApos > 0) { // move DOWN
+    } else if (desiredPos - UApos < 0) { // move DOWN
       if (isOverExtended && OECheck) {
         _upperArm.set(0);
       } else {
@@ -870,37 +874,35 @@ public class Robot extends TimedRobot {
     double currUA = _UAtendon.get();
     double currFA = _FAtendon.get();
 
-    if (currFA - 0.05 > desiredFA && currFA + 0.05 < desiredFA) { // sets a variance of 0.05 (Requires testing)
-      if (currUA - 0.05 > desiredUA && currUA + 0.05 < desiredUA) {
-        moveForeArm(0);
-        moveUpperArm(0);
-      } else {
-        moveUpperArmToPos(1, desiredUA);
-        moveForeArm(0);
-      }
+    if (!(currFA - 0.01 < desiredFA && currFA + 0.01 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
+      moveForeArmToPos(speed, desiredFA);
     } else {
-      moveForeArmToPos(1, desiredFA);
+      moveForeArm(0);
+    }
+    
+    if (!(currUA - 0.01 < desiredUA && currUA + 0.01 > desiredUA)) {
+      moveUpperArmToPos(speed, desiredUA);
+    } else {
       moveUpperArm(0);
     }
   }
 
   public void moveToIntakeHP(double speed) {
     double desiredUA = 0.537;
-    double desiredFA = 0.778;
+    double desiredFA = 0.775;
     double currUA = _UAtendon.get();
     double currFA = _FAtendon.get();
 
-    if (currFA - 0.05 > desiredFA && currFA + 0.05 < desiredFA) { // sets a variance of 0.05 (Requires testing)
-      if (currUA - 0.05 > desiredUA && currUA + 0.05 < desiredUA) {
-        moveForeArm(0);
-        moveUpperArm(0);
-      } else {
-        moveUpperArmToPos(1, desiredUA);
-        moveForeArm(0);
-      }
+    if (!(currFA - 0.005 < desiredFA && currFA + 0.005 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
+      moveForeArmToPos(speed, desiredFA);
     } else {
-      moveForeArmToPos(1, desiredFA);
-      moveUpperArm(1); // Necessary? Safe? Faster?
+      moveForeArm(0);
+    }
+    
+    if (!(currUA - 0.005 < desiredUA && currUA + 0.005 > desiredUA)) {
+      moveUpperArmToPos(speed, desiredUA);
+    } else {
+      moveUpperArm(0);
     }
   }
 
@@ -963,6 +965,7 @@ public class Robot extends TimedRobot {
     }
 
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
+    table.getEntry("stream").setNumber(2); // sets intake camera to be larger than limelight cam
   }
 
   @Override
@@ -1062,9 +1065,9 @@ public class Robot extends TimedRobot {
     }
     
     if (r_stick.getRawButton(2)) {
-      if (r_stick.getRawButtonPressed(2)) {
-        gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
-      }
+      // if (r_stick.getRawButtonPressed(2)) {
+      //   gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
+      // }
       chargeBalance();
     }
   }
