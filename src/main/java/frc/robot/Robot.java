@@ -173,7 +173,6 @@ public class Robot extends TimedRobot {
   @Override
   public void autonomousPeriodic() {
     // TODO: Cone auto doesn't function with the type of reflective tape used. Find new reflective tape and add 2 more cone autos depending on whether you're on the close or far side (two sets of pipes next to each other!!)
-    // TODO: Dock auto is not currently possible. (Possibly) remake charge station and find a way to stay still with mecanum wheels!
 
     checkTendons();
     x = tx.getDouble(0.0);
@@ -1044,20 +1043,31 @@ public class Robot extends TimedRobot {
       grabGamePiece(0, "zero");
     }
 
+    if (l_stick.getRawButton(5)) {
+      kickStand(1);
+    } else if (l_stick.getRawButton(3)) {
+      kickStand(-1);
+    } else {
+      kickStand(0);
+    }
+    
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
     if (l_stick.getRawButton(1)) { // LIMELIGHT uncovered targeting
       table.getEntry("pipeline").setNumber(0);
       limelightTarget(x, y);
-    } else if (l_stick.getRawButton(5)) { // LIMELIGHT top covered?
-      table.getEntry("pipeline").setNumber(3); 
-      limelightTarget(x, y);
-    } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
-      table.getEntry("pipeline").setNumber(2);
-      limelightTarget(x, y);
-    } else if (r_stick.getRawButtonPressed(1)) { // snapshot taker (requires pit testing)
-      table.getEntry("snapshot").setNumber(1);
-    } else if (l_stick.getRawButton(2)) {
+    } 
+    // else if (l_stick.getRawButton(5)) { // LIMELIGHT top covered?
+    //   table.getEntry("pipeline").setNumber(3); 
+    //   limelightTarget(x, y);
+    // } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
+    //   table.getEntry("pipeline").setNumber(2);
+    //   limelightTarget(x, y);
+    // } 
+    // else if (r_stick.getRawButtonPressed(1)) { // snapshot taker (requires pit testing)
+    //   table.getEntry("snapshot").setNumber(1);
+    // } 
+    else if (l_stick.getRawButton(2)) {
       table.getEntry("ledMode").setNumber(3);
     } else {
       table.getEntry("ledMode").setNumber(1);
