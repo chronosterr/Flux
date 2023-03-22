@@ -44,7 +44,7 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _driveRearRight = new WPI_TalonSRX(5);
   WPI_TalonSRX _intake = new WPI_TalonSRX(3);
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
-  WPI_TalonSRX _kickStand = new WPI_TalonSRX(7); // TODO: Update firmware and set up new Talon
+  WPI_TalonSRX _kickStand = new WPI_TalonSRX(9); // TODO: Update firmware and set up new Talon
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
@@ -54,7 +54,7 @@ public class Robot extends TimedRobot {
   DigitalInput _kickStandMax = new DigitalInput(0);
   DigitalInput _kickStandZero = new DigitalInput(1);
 
-  WPI_Pigeon2 gyro = new WPI_Pigeon2(7);
+  WPI_Pigeon2 gyro = new WPI_Pigeon2(8);
 
   double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos, yaw_adjust, yaw, pitch_adjust, pitch;
   float Kp, min_command, KpYaw, min_commandYaw, KpPitch, min_commandPitch;
@@ -177,6 +177,12 @@ public class Robot extends TimedRobot {
     checkTendons();
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
+    SmartDashboard.putBoolean("isChargeTipped", isChargeTipped);
+    SmartDashboard.putBoolean("isChargeLevel", isChargeLevel);
+    SmartDashboard.putNumber("Yaw", gyro.getYaw());
+    SmartDashboard.putNumber("Pitch", gyro.getPitch());
+    SmartDashboard.putNumber("Roll", gyro.getRoll());
+
     switch (m_autoSelected) {
       case kNDockCubeL: case kNDockCubeR: // takes both cases (only difference is strafe, which is dictated when necessary)
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
@@ -578,15 +584,13 @@ public class Robot extends TimedRobot {
 
         // } else 
         if (5.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-          SmartDashboard.putBoolean("isChargeTipped", isChargeTipped);
-          SmartDashboard.putBoolean("isChargeLevel", isChargeLevel);
 
           grabGamePiece(0, "zero");
-          moveForeArm(-0.4);
-          moveUpperArm(0.50);
-          if (gyro.getPitch() < -10) {
+          moveForeArm(0);
+          moveUpperArm(0);
+          if (gyro.getPitch() < -12) {
             isChargeTipped = true;
-          } if (gyro.getPitch() > 3) {
+          } if (isChargeTipped && gyro.getPitch() > -5) {
             isChargeLevel = true;
           }
           
@@ -603,8 +607,12 @@ public class Robot extends TimedRobot {
           }
 
           if (!isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
-          // if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.3, 0, -yaw_adjust);
-          if (isChargeTipped) chargeBalance();
+          if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.4, 0, -yaw_adjust);
+          if (isChargeTipped && isChargeLevel) {
+            chargeBalance();
+            kickStand(-1);
+          }
+          // if (isChargeTipped) chargeBalance();
         } else {
           grabGamePiece(0, "zero");
           moveForeArm(0);
@@ -670,6 +678,9 @@ public class Robot extends TimedRobot {
     SmartDashboard.putBoolean("isForeArmMax", isForeArmMax);
     SmartDashboard.putBoolean("isIntakeZero", isIntakeZero);
     SmartDashboard.putBoolean("isIntakeMax", isIntakeMax);
+
+    SmartDashboard.putBoolean("Kickstand Max", !_kickStandMax.get());
+    SmartDashboard.putBoolean("Kickstand Zero", !_kickStandZero.get());
   }
 
   public void checkOverExtended() {
@@ -945,9 +956,9 @@ public class Robot extends TimedRobot {
   }
 
   public void kickStand(double speed) {
-    if (speed > 0 && _kickStandMax.get()) {
+    if (speed < 0 && _kickStandMax.get()) {
       _kickStand.set(speed);
-    } else if (speed < 0 && _kickStandZero.get()) {
+    } else if (speed > 0 && _kickStandZero.get()) {
       _kickStand.set(speed);
     } else {
       _kickStand.set(0);
