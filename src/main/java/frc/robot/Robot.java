@@ -62,7 +62,7 @@ public class Robot extends TimedRobot {
                  isIntakeZero, isForeArmMax, 
                  isUpperArmMax, isIntakeMax,
                  isOverExtended,
-                 isChargeTipped, isChargeLevel;
+                 isChargeTipped, isCommunityLeft, isChargeLevel;
 
   private final XboxController xbox = new XboxController(2);
 
@@ -167,6 +167,7 @@ public class Robot extends TimedRobot {
 
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
     isChargeTipped = false;
+    isCommunityLeft = false;
     isChargeLevel = false;
   }
 
@@ -178,6 +179,7 @@ public class Robot extends TimedRobot {
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
     SmartDashboard.putBoolean("isChargeTipped", isChargeTipped);
+    SmartDashboard.putBoolean("isCommunityLeft", isCommunityLeft);
     SmartDashboard.putBoolean("isChargeLevel", isChargeLevel);
     SmartDashboard.putNumber("Yaw", gyro.getYaw());
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
@@ -190,13 +192,13 @@ public class Robot extends TimedRobot {
 
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
-          moveForeArmToPos(1, 0.630);
-          moveUpperArm(-0.75);
+          moveForeArmToPos(1, 0.683);
+          moveUpperArmToPos(0.8, 0.639);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
           m_robotDrive.driveCartesian(0.25, 0, 0);
-          moveForeArmToPos(1, 0.630);
-          moveUpperArm(-0.75);
+          moveForeArmToPos(1, 0.683);
+          moveUpperArmToPos(0.8, 0.639);
 
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -515,6 +517,7 @@ public class Robot extends TimedRobot {
         } else if (10.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           grabGamePiece(0, "zero");
           if (10.0 < auto_timer.get() && auto_timer.get() < 10.5) {
+            // TODO: THE CODE FROM THIS POINT ONWARD IS OUTDATED. SEE KYDOCKCUBEC.
             moveForeArm(1);
           } else {
             moveForeArm(-0.4);
@@ -557,40 +560,40 @@ public class Robot extends TimedRobot {
         break;
       
       case kYDockCubeC:
-        // if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
-        //   grabGamePiece(1, "cube");
+      if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
+        grabGamePiece(1, "cube");
 
-        // } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
-        //   grabGamePiece(0, "zero");
-        //   moveForeArm(1);
-        //   moveUpperArm(-0.75);
+      } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
+        grabGamePiece(0, "zero");
+        moveForeArmToPos(1, 0.683);
+        moveUpperArmToPos(0.8, 0.639);
 
-        // } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
-        //   m_robotDrive.driveCartesian(0.25, 0, 0);
-        //   moveForeArm(1);
-        //   moveUpperArm(-0.75);
+      } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
+        m_robotDrive.driveCartesian(0.25, 0, 0);
+        moveForeArmToPos(1, 0.683);
+        moveUpperArmToPos(0.8, 0.639);
 
-        // } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
-        //   m_robotDrive.driveCartesian(0, 0, 0);
-        //   grabGamePiece(1, "open");
-        //   moveForeArm(0);
-        //   moveUpperArm(0);
+      } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+        m_robotDrive.driveCartesian(0, 0, 0);
+        grabGamePiece(1, "open");
+        moveForeArm(0);
+        moveUpperArm(0);
 
-        // } else if (7.5 < auto_timer.get() && auto_timer.get() < 10.0) {
-        //   m_robotDrive.driveCartesian(-0.25, 0, 0);
-        //   grabGamePiece(0, "zero");
-        //   moveForeArm(-1);
-        //   moveUpperArm(0.75);
+      } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.0) {
+        grabGamePiece(0, "zero");
+        moveForeArm(-1);
+        moveUpperArm(1);
+        m_robotDrive.driveCartesian(-0.25, 0, 0);
 
-        // } else 
-        if (5.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-
+      } else if (8.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           grabGamePiece(0, "zero");
-          moveForeArm(0);
-          moveUpperArm(0);
+          moveForeArm(-1);
+          moveUpperArm(1);
           if (gyro.getPitch() < -12) {
             isChargeTipped = true;
-          } if (isChargeTipped && gyro.getPitch() > -5) {
+          } if (isChargeTipped && gyro.getPitch() > 12) {
+            isCommunityLeft = true;
+          } if (isCommunityLeft && gyro.getPitch() < 5) {
             isChargeLevel = true;
           }
           
@@ -606,9 +609,10 @@ public class Robot extends TimedRobot {
             yaw_adjust = -0.5;
           }
 
-          if (!isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
-          if (isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-0.4, 0, -yaw_adjust);
-          if (isChargeTipped && isChargeLevel) {
+          if (!isChargeTipped && !isCommunityLeft && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
+          else if (isChargeTipped && !isCommunityLeft && !isChargeLevel ) m_robotDrive.driveCartesian(-0.4, 0, -yaw_adjust);
+          else if (isChargeTipped && isCommunityLeft && !isChargeLevel) chargeBalance();
+          else if (isChargeTipped && isCommunityLeft && isChargeLevel) {
             chargeBalance();
             kickStand(-1);
           }
