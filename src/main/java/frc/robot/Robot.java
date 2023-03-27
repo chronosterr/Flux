@@ -105,7 +105,7 @@ public class Robot extends TimedRobot {
   public void robotInit() {
     Kp = -0.035f;
     KpYaw = -0.04f;
-    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
 
     min_command = 0.05f;
     min_commandYaw = 0.075f;
@@ -134,7 +134,7 @@ public class Robot extends TimedRobot {
     m_overExtensionChooser.addOption("No, We Don't Care", kNCare);
     m_overExtensionChooser.setDefaultOption("Default (No)", kNCare);
     SmartDashboard.putData("Anti-Overextension Code?", m_overExtensionChooser);
-    SmartDashboard.putNumber("chargeBalance Power", -0.025f);
+    SmartDashboard.putNumber("chargeBalance Power", -0.03f);
 
     m_autoChooser.addOption("No Dock Cube L of C", kNDockCubeL);
     m_autoChooser.addOption("No Dock Cube R of C", kNDockCubeR);
@@ -165,7 +165,7 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_autoChooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
 
-    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
     isChargeTipped = false;
     isCommunityLeft = false;
     isChargeLevel = false;
@@ -887,17 +887,14 @@ public class Robot extends TimedRobot {
     double desiredFA = 0.909;
     double currUA = _UAtendon.get();
     double currFA = _FAtendon.get();
+    moveForeArm(0);
+    moveUpperArm(0);
 
     if (!(currFA - 0.01 < desiredFA && currFA + 0.01 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
       moveForeArmToPos(speed, desiredFA);
-    } else {
-      moveForeArm(0);
     }
-    
     if (!(currUA - 0.01 < desiredUA && currUA + 0.01 > desiredUA)) {
       moveUpperArmToPos(speed, desiredUA);
-    } else {
-      moveUpperArm(0);
     }
   }
 
@@ -906,17 +903,14 @@ public class Robot extends TimedRobot {
     double desiredFA = 0.775;
     double currUA = _UAtendon.get();
     double currFA = _FAtendon.get();
+    moveForeArm(0);
+    moveUpperArm(0);
 
-    if (!(currFA - 0.005 < desiredFA && currFA + 0.005 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
+    if (!(currFA - 0.01 < desiredFA && currFA + 0.01 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
       moveForeArmToPos(speed, desiredFA);
-    } else {
-      moveForeArm(0);
     }
-    
-    if (!(currUA - 0.005 < desiredUA && currUA + 0.005 > desiredUA)) {
+    if (!(currUA - 0.01 < desiredUA && currUA + 0.01 > desiredUA)) {
       moveUpperArmToPos(speed, desiredUA);
-    } else {
-      moveUpperArm(0);
     }
   }
 
@@ -978,7 +972,7 @@ public class Robot extends TimedRobot {
       OECheck = false;
     }
 
-    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.025f);
+    KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
     table.getEntry("stream").setNumber(2); // sets intake camera to be larger than limelight cam
   }
 
