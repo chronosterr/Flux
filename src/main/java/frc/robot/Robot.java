@@ -106,6 +106,7 @@ public class Robot extends TimedRobot {
     Kp = -0.035f;
     KpYaw = -0.04f;
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
+    table.getEntry("stream").setNumber(1); // sets intake camera to be larger than limelight cam
 
     min_command = 0.05f;
     min_commandYaw = 0.075f;
@@ -121,6 +122,7 @@ public class Robot extends TimedRobot {
     _foreArm.configFactoryDefault();
 
     _foreArm.setNeutralMode(NeutralMode.Brake); // possibly redundant, but it helps my brain
+    _kickStand.setNeutralMode(NeutralMode.Brake); // possibly redundant, but it helps my brain
     
     _driveFrontLeft.setInverted(false); // redundant, but it helps my brain
     _driveRearLeft.setInverted(false); // redundant, but it helps my brain
@@ -173,7 +175,6 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousPeriodic() {
-    // TODO: Cone auto doesn't function with the type of reflective tape used. Find new reflective tape and add 2 more cone autos depending on whether you're on the close or far side (two sets of pipes next to each other!!)
 
     checkTendons();
     x = tx.getDouble(0.0);
@@ -192,12 +193,12 @@ public class Robot extends TimedRobot {
 
         } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
           grabGamePiece(0, "zero");
-          moveForeArmToPos(1, 0.683);
+          moveForeArmToPos(1, 0.633);
           moveUpperArmToPos(0.8, 0.639);
 
         } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
           m_robotDrive.driveCartesian(0.25, 0, 0);
-          moveForeArmToPos(1, 0.683);
+          moveForeArmToPos(1, 0.633);
           moveUpperArmToPos(0.8, 0.639);
 
         } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
@@ -377,31 +378,31 @@ public class Robot extends TimedRobot {
           moveForeArm(0);
           moveUpperArm(0);
 
-        } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-          m_robotDrive.driveCartesian(-0.25, 0, 0);
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
+        // } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
+        //   m_robotDrive.driveCartesian(-0.25, 0, 0);
+        //   grabGamePiece(0, "zero");
+        //   moveForeArm(-1);
+        //   moveUpperArm(1);
 
-        } else if (8.5 < auto_timer.get() && auto_timer.get() < 15.0) {
-          grabGamePiece(0, "zero");
-          moveForeArm(-1);
-          moveUpperArm(1);
+        // } else if (8.5 < auto_timer.get() && auto_timer.get() < 15.0) {
+        //   grabGamePiece(0, "zero");
+        //   moveForeArm(-1);
+        //   moveUpperArm(1);
           
-          yaw = gyro.getYaw();
+        //   yaw = gyro.getYaw();
 
-          if (Math.abs(yaw) > min_commandYaw) {
-            yaw_adjust = KpYaw * yaw;
-          }
+        //   if (Math.abs(yaw) > min_commandYaw) {
+        //     yaw_adjust = KpYaw * yaw;
+        //   }
     
-          if (yaw_adjust > 0.5) {
-            yaw_adjust = 0.5;
-          } else if (yaw_adjust < -0.5) {
-            yaw_adjust = -0.5;
-          }
+        //   if (yaw_adjust > 0.5) {
+        //     yaw_adjust = 0.5;
+        //   } else if (yaw_adjust < -0.5) {
+        //     yaw_adjust = -0.5;
+        //   }
 
-          m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
-          yaw_adjust = 0;
+        //   m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
+        //   yaw_adjust = 0;
 
         }  else {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -565,12 +566,12 @@ public class Robot extends TimedRobot {
 
       } else if (1.0 < auto_timer.get() && auto_timer.get() < 4.5) {
         grabGamePiece(0, "zero");
-        moveForeArmToPos(1, 0.683);
+        moveForeArmToPos(1, 0.633);
         moveUpperArmToPos(0.8, 0.639);
 
       } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
         m_robotDrive.driveCartesian(0.25, 0, 0);
-        moveForeArmToPos(1, 0.683);
+        moveForeArmToPos(1, 0.633);
         moveUpperArmToPos(0.8, 0.639);
 
       } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
@@ -585,7 +586,7 @@ public class Robot extends TimedRobot {
         moveUpperArm(1);
         m_robotDrive.driveCartesian(-0.25, 0, 0);
 
-      } else if (8.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+      } else if (8.0 < auto_timer.get() && auto_timer.get() < 12.0) {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
@@ -593,7 +594,7 @@ public class Robot extends TimedRobot {
             isChargeTipped = true;
           } if (isChargeTipped && gyro.getPitch() > 12) {
             isCommunityLeft = true;
-          } if (isCommunityLeft && gyro.getPitch() < 5) {
+          } if (isCommunityLeft && gyro.getPitch() < 10) {
             isChargeLevel = true;
           }
           
@@ -612,11 +613,9 @@ public class Robot extends TimedRobot {
           if (!isChargeTipped && !isCommunityLeft && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
           else if (isChargeTipped && !isCommunityLeft && !isChargeLevel ) m_robotDrive.driveCartesian(-0.4, 0, -yaw_adjust);
           else if (isChargeTipped && isCommunityLeft && !isChargeLevel) chargeBalance();
-          else if (isChargeTipped && isCommunityLeft && isChargeLevel) {
-            chargeBalance();
-            kickStand(-1);
-          }
-          // if (isChargeTipped) chargeBalance();
+        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          kickStand(-0.8);
+          chargeBalance();
         } else {
           grabGamePiece(0, "zero");
           moveForeArm(0);
@@ -706,7 +705,7 @@ public class Robot extends TimedRobot {
   }
 
   public void chargeBalance() {
-    yaw = gyro.getYaw() % 360;
+    yaw = gyro.getYaw();
     pitch = gyro.getPitch();
     yaw_adjust = 0.0f;
 
@@ -846,36 +845,40 @@ public class Robot extends TimedRobot {
   }
   public void moveUpperArmToPos(double speed, double desiredPos) { // speed should always be positive!
     double UApos = _UAtendon.get();
-    if (desiredPos - UApos > 0) { // move UP
-      if (isUpperArmMax && OECheck) {
-        _upperArm.set(0);
+    if (!(UApos - 0.01 < desiredPos && UApos + 0.01 > desiredPos)) {
+      if (desiredPos - UApos > 0) { // move UP
+        if (isUpperArmMax && OECheck) {
+          _upperArm.set(0);
+        } else {
+          _upperArm.set(-speed);
+        }
+      } else if (desiredPos - UApos < 0) { // move DOWN
+        if (isOverExtended && OECheck) {
+          _upperArm.set(0);
+        } else {
+          _upperArm.set(speed);
+        }
       } else {
-        _upperArm.set(-speed);
-      }
-    } else if (desiredPos - UApos < 0) { // move DOWN
-      if (isOverExtended && OECheck) {
         _upperArm.set(0);
-      } else {
-        _upperArm.set(speed);
       }
-    } else {
-      _upperArm.set(0);
     }
   }
 
   public void moveForeArmToPos(double speed, double desiredPos) { // speed should always be positive!
     double FApos = _FAtendon.get();
-    if (desiredPos - FApos < 0) { // move UP
-      if (isForeArmMax || (isOverExtended && OECheck)) {
-        _foreArm.set(0);
-      } else {
-        _foreArm.set(speed);
-      }
-    } else if (desiredPos - FApos > 0) { // move DOWN
-      if (isForeArmZero) {
-        _foreArm.set(0);
-      } else {
-        _foreArm.set(-speed);
+    if (!(FApos - 0.01 < desiredPos && FApos + 0.01 > desiredPos)) {
+      if (desiredPos - FApos < 0) { // move UP
+        if (isForeArmMax || (isOverExtended && OECheck)) {
+          _foreArm.set(0);
+        } else {
+          _foreArm.set(speed);
+        }
+      } else if (desiredPos - FApos > 0) { // move DOWN
+        if (isForeArmZero) {
+          _foreArm.set(0);
+        } else {
+          _foreArm.set(-speed);
+        }
       }
     } else {
       _foreArm.set(0);
@@ -883,35 +886,23 @@ public class Robot extends TimedRobot {
   }
 
   public void moveToIntakeFloor(double speed) {
-    double desiredUA = 0.618;
-    double desiredFA = 0.909;
-    double currUA = _UAtendon.get();
-    double currFA = _FAtendon.get();
+    double desiredUA = 0.610;
+    double desiredFA = 0.916;
+
     moveForeArm(0);
     moveUpperArm(0);
-
-    if (!(currFA - 0.01 < desiredFA && currFA + 0.01 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
-      moveForeArmToPos(speed, desiredFA);
-    }
-    if (!(currUA - 0.01 < desiredUA && currUA + 0.01 > desiredUA)) {
-      moveUpperArmToPos(speed, desiredUA);
-    }
+    moveForeArmToPos(speed, desiredFA);
+    moveUpperArmToPos(speed, desiredUA);
   }
 
   public void moveToIntakeHP(double speed) {
     double desiredUA = 0.537;
     double desiredFA = 0.775;
-    double currUA = _UAtendon.get();
-    double currFA = _FAtendon.get();
+    
     moveForeArm(0);
     moveUpperArm(0);
-
-    if (!(currFA - 0.01 < desiredFA && currFA + 0.01 > desiredFA)) { // sets a variance of 0.01 (Requires testing)
-      moveForeArmToPos(speed, desiredFA);
-    }
-    if (!(currUA - 0.01 < desiredUA && currUA + 0.01 > desiredUA)) {
-      moveUpperArmToPos(speed, desiredUA);
-    }
+    moveForeArmToPos(speed, desiredFA);
+    moveUpperArmToPos(speed, desiredUA);
   }
 
   public void grabGamePiece(double speed, String piece) {
@@ -973,7 +964,7 @@ public class Robot extends TimedRobot {
     }
 
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
-    table.getEntry("stream").setNumber(2); // sets intake camera to be larger than limelight cam
+    table.getEntry("stream").setNumber(1); // sets intake camera to be larger than limelight cam
   }
 
   @Override
@@ -990,6 +981,17 @@ public class Robot extends TimedRobot {
     // m_robotDrive.driveCartesian(l_filter.calculate(-l_stick.getY()), l_stick.getX(), r_filter.calculate(r_stick.getZ()));
 
     // ROBOT-ORIENTED DRIVE
+
+    /* DEADBAND CODE
+    double xDrive = -l_stick.getY();
+    double yDrive = l_stick.getX();
+    double zDrive = r_stick.getZ();
+    if (Math.abs(xDrive) < 0.2) xDrive = 0;
+    if (Math.abs(yDrive) < 0.2) yDrive = 0;
+    if (Math.abs(zDrive) < 0.2) zDrive = 0;
+    m_robotDrive.driveCartesian(xDrive, yDrive, zDrive);
+     */
+
     m_robotDrive.driveCartesian(-l_stick.getY(), l_stick.getX(), r_stick.getZ());
 
     int A = 1;
@@ -1062,17 +1064,18 @@ public class Robot extends TimedRobot {
     
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
-    if (l_stick.getRawButton(1)) { // LIMELIGHT uncovered targeting
+    if (l_stick.getRawButton(1)) { // LIMELIGHT left targeting
       table.getEntry("pipeline").setNumber(0);
       limelightTarget(x, y);
     } 
-    // else if (l_stick.getRawButton(5)) { // LIMELIGHT top covered?
-    //   table.getEntry("pipeline").setNumber(3); 
-    //   limelightTarget(x, y);
+    else if (r_stick.getRawButton(1)) { // LIMELIGHT right targeting
+      table.getEntry("pipeline").setNumber(2); 
+      limelightTarget(x, y);
     // } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
-    //   table.getEntry("pipeline").setNumber(2);
+    //   table.getEntry("pipeline").setNumber(3);
     //   limelightTarget(x, y);
-    // } 
+    }
+    
     // else if (r_stick.getRawButtonPressed(1)) { // snapshot taker (requires pit testing)
     //   table.getEntry("snapshot").setNumber(1);
     // } 
@@ -1084,9 +1087,9 @@ public class Robot extends TimedRobot {
     }
     
     if (r_stick.getRawButton(2)) {
-      // if (r_stick.getRawButtonPressed(2)) {
-      //   gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
-      // }
+      if (r_stick.getRawButtonPressed(2)) {
+        gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
+      }
       chargeBalance();
     }
   }
