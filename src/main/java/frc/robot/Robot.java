@@ -51,6 +51,8 @@ public class Robot extends TimedRobot {
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.540; double maxItendon = 0.850;
 
+  AnalogPotentiometer _rangeFinder = new AnalogPotentiometer(3);
+
   DigitalInput _kickStandMax = new DigitalInput(0);
   DigitalInput _kickStandZero = new DigitalInput(1);
 
@@ -279,6 +281,7 @@ public class Robot extends TimedRobot {
         break;
       
       case kNDockConeL: case kNDockConeR:
+      table.getEntry("pipeline").setNumber(2); 
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(1, "cone");
 
@@ -297,7 +300,7 @@ public class Robot extends TimedRobot {
           moveForeArm(-1);
 
         } else if (9.5 < auto_timer.get() && auto_timer.get() < 10.0) {
-          limelightTarget(x, y);
+          // limelightTarget(x, y);
           grabGamePiece(0.5, "open");
           moveForeArm(-0.8);
 
@@ -1009,6 +1012,10 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Forearm Potentiometer value", _FAtendon.get());
     SmartDashboard.putNumber("Intake Potentiometer value", _Itendon.get());
 
+    SmartDashboard.putNumber("Range Value", _rangeFinder.get());
+
+    if (Math.abs(gyro.getAngle()) > 360) gyro.reset();
+    
     SmartDashboard.putNumber("Yaw", gyro.getYaw());
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
     SmartDashboard.putNumber("Roll", gyro.getRoll());
@@ -1083,13 +1090,12 @@ public class Robot extends TimedRobot {
       table.getEntry("ledMode").setNumber(3);
     } else {
       table.getEntry("ledMode").setNumber(1);
-      table.getEntry("snapshot").setNumber(0);
     }
     
     if (r_stick.getRawButton(2)) {
-      if (r_stick.getRawButtonPressed(2)) {
-        gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
-      }
+      // if (r_stick.getRawButtonPressed(2)) {
+      //   gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
+      // }
       chargeBalance();
     }
   }
