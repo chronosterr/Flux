@@ -593,13 +593,8 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
           moveForeArm(-1);
           moveUpperArm(1);
-          if (gyro.getPitch() < -12) {
-            isChargeTipped = true;
-          } if (isChargeTipped && gyro.getPitch() > 12) {
-            isCommunityLeft = true;
-          } if (isCommunityLeft && gyro.getPitch() < 10) {
-            isChargeLevel = true;
-          }
+          if (gyro.getPitch() < -12) isChargeTipped = true;
+          if (gyro.getPitch() > -7 && isChargeTipped) isChargeLevel = true;
           
           yaw = gyro.getYaw();
 
@@ -613,18 +608,21 @@ public class Robot extends TimedRobot {
             yaw_adjust = -0.5;
           }
 
-          if (!isChargeTipped && !isCommunityLeft && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
-          else if (isChargeTipped && !isCommunityLeft && !isChargeLevel ) m_robotDrive.driveCartesian(-0.4, 0, -yaw_adjust);
-          else if (isChargeTipped && isCommunityLeft && !isChargeLevel) chargeBalance();
-        } else if (12.0 < auto_timer.get() && auto_timer.get() < 15.0) {
-          kickStand(-0.8);
+          if (!isChargeTipped && !isChargeLevel) m_robotDrive.driveCartesian(-1, 0, -yaw_adjust);
+          else if (isChargeTipped && !isChargeLevel) {
+            chargeBalance();
+          } else if (isChargeTipped && isChargeLevel) {
+            chargeBalance();
+            kickStand(-1);
+          }
+        } else if (13.0 < auto_timer.get() && auto_timer.get() < 15.0) {
+          kickStand(-1);
           chargeBalance();
         } else {
           grabGamePiece(0, "zero");
           moveForeArm(0);
           moveUpperArm(0);
           m_robotDrive.driveCartesian(0, 0, 0);
-
         }
         break;
         
