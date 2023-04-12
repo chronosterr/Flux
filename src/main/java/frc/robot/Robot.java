@@ -22,6 +22,7 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.RobotController;
 
 
 /*            UNUSED IMPORTS
@@ -38,13 +39,14 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 */
 
 public class Robot extends TimedRobot {
+  RobotController _controller;
   WPI_TalonSRX _driveFrontLeft = new WPI_TalonSRX(4);
   WPI_TalonSRX _driveRearLeft = new WPI_TalonSRX(2);
   WPI_TalonSRX _driveFrontRight = new WPI_TalonSRX(1);
   WPI_TalonSRX _driveRearRight = new WPI_TalonSRX(5);
   WPI_TalonSRX _intake = new WPI_TalonSRX(3);
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
-  WPI_TalonSRX _kickStand = new WPI_TalonSRX(9); // TODO: Update firmware and set up new Talon
+  WPI_TalonSRX _kickStand = new WPI_TalonSRX(9);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
 
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
@@ -783,9 +785,9 @@ public class Robot extends TimedRobot {
       yaw_adjust = -0.5;
     }
 
-    SmartDashboard.putNumber("x_adjust", x_adjust);
-    SmartDashboard.putNumber("y_adjust", y_adjust);
-    SmartDashboard.putNumber("yaw_adjust", yaw_adjust);
+    // SmartDashboard.putNumber("x_adjust", x_adjust);
+    // SmartDashboard.putNumber("y_adjust", y_adjust);
+    // SmartDashboard.putNumber("yaw_adjust", yaw_adjust);
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), -x_adjust + l_stick.getX(), -yaw_adjust + r_stick.getX());
   }
 
@@ -945,6 +947,30 @@ public class Robot extends TimedRobot {
     }
   }
 
+  public void driveToHP() {
+    /*
+     * MAX VALUE: ~0.43 (78 inches)
+     * TARGET VALUE: ~0.09 (8.5 inches)
+     * MIN VALUE: ~0.05
+     */
+    double targetDistance = 0.087114023795086; // 19 inches is the sweet spot?
+    double travelDistance = (_rangeFinder.get() - targetDistance) * 20;
+  
+    y_adjust = 0.0f;
+
+    if (Math.abs(travelDistance) > 0.13f) {
+      y_adjust = 0.13f * travelDistance;
+    }
+
+    if (y_adjust > 0.2) y_adjust = 0.2;
+    if (y_adjust < -0.2) y_adjust = -0.2;
+    // else if (Math.abs(travelDistance) < 0.001f) y_adjust = 0;
+    SmartDashboard.putNumber("Travel Distance", travelDistance);
+    SmartDashboard.putNumber("y_adjust", y_adjust);
+    m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), l_stick.getX(), r_stick.getZ());
+
+  }
+
   public void kickStand(double speed) {
     if (speed < 0 && _kickStandMax.get()) {
       _kickStand.set(speed);
@@ -1009,7 +1035,6 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("Upper Arm Potentiometer value", _UAtendon.get());
     SmartDashboard.putNumber("Forearm Potentiometer value", _FAtendon.get());
     SmartDashboard.putNumber("Intake Potentiometer value", _Itendon.get());
-
     SmartDashboard.putNumber("Range Value", _rangeFinder.get());
 
     if (Math.abs(gyro.getAngle()) > 360) gyro.reset();
@@ -1065,6 +1090,10 @@ public class Robot extends TimedRobot {
       kickStand(-1);
     } else {
       kickStand(0);
+    }
+
+    if (l_stick.getRawButton(9)) {
+      driveToHP();
     }
     
     x = tx.getDouble(0.0);
