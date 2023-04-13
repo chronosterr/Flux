@@ -22,8 +22,6 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.RobotController;
-
 
 /*            UNUSED IMPORTS
 import edu.wpi.first.wpilibj.Encoder;
@@ -39,7 +37,6 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 */
 
 public class Robot extends TimedRobot {
-  RobotController _controller;
   WPI_TalonSRX _driveFrontLeft = new WPI_TalonSRX(4);
   WPI_TalonSRX _driveRearLeft = new WPI_TalonSRX(2);
   WPI_TalonSRX _driveFrontRight = new WPI_TalonSRX(1);
@@ -48,8 +45,9 @@ public class Robot extends TimedRobot {
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
   WPI_TalonSRX _kickStand = new WPI_TalonSRX(9);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
+  WPI_Pigeon2 gyro = new WPI_Pigeon2(8);
 
-  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652; // 0.535 0.643 | 0.526 0.631 | 0.500 0.600 | 0.520 0.620
+  AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652;
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.540; double maxItendon = 0.850;
 
@@ -58,15 +56,14 @@ public class Robot extends TimedRobot {
   DigitalInput _kickStandMax = new DigitalInput(0);
   DigitalInput _kickStandZero = new DigitalInput(1);
 
-  WPI_Pigeon2 gyro = new WPI_Pigeon2(8);
-
   double x, y, area, x_adjust, y_adjust, FApos, UApos, Ipos, yaw_adjust, yaw, pitch_adjust, pitch;
   float Kp, min_command, KpYaw, min_commandYaw, KpPitch, min_commandPitch;
   public boolean isForeArmZero, isUpperArmZero, 
                  isIntakeZero, isForeArmMax, 
                  isUpperArmMax, isIntakeMax,
                  isOverExtended,
-                 isChargeTipped, isCommunityLeft, isChargeLevel;
+                 isChargeTipped, isCommunityLeft, isChargeLevel,
+                 isDebug;
 
   private final XboxController xbox = new XboxController(2);
 
@@ -84,19 +81,19 @@ public class Robot extends TimedRobot {
   private static final String kNCare = "No, We Don't Care";
   private static final String kYCare = "Yes, We Care";
 
+  private static final String kDebug = "Debugging";
+  private static final String kNorm = "Default (No Debugging)";
+
   private static final String kNDockCubeL = "No Dock Cube L of C";
   private static final String kNDockCubeR = "No Dock Cube R of C";
   private static final String kNDockCubeMisc = "No Dock Cube Straight";
   private static final String kNDockConeMisc = "No Dock Cone Straight";
-  private static final String kNDockConeL = "No Dock Cone L of C";
-  private static final String kNDockConeR = "No Dock Cone R of C";
-  private static final String kYDockCubeL = "Dock Cube L of C";
+  private static final String kNDockConeLL = "NDock Cone L of C, L Post";
+  private static final String kNDockConeLR = "NDock Cone L of C, R Post";
+  private static final String kNDockConeRL = "NDock Cone R of C, L Post";
+  private static final String kNDockConeRR = "NDock Cone R of C, R Post";
   private static final String kYDockCubeC = "Dock Cube C";
-  private static final String kYDockCubeR = "Dock Cube R of C";
-  private static final String kYDockConeL = "Dock Cone L of C";
   private static final String kYDockConeC = "Dock Cone C";
-  private static final String kYDockConeR = "Dock Cone R of C";
-
   private static final String kDriveAuto = "Drive Auto";
   private static final String kDefaultAuto = "Default Auto";
   private String m_autoSelected;
@@ -104,6 +101,7 @@ public class Robot extends TimedRobot {
   public boolean OECheck = false;
   private final SendableChooser<String> m_autoChooser = new SendableChooser<>();
   private final SendableChooser<String> m_overExtensionChooser = new SendableChooser<>();
+  private final SendableChooser<String> m_debugChooser = new SendableChooser<>();
 
   @Override
   public void robotInit() {
@@ -140,20 +138,23 @@ public class Robot extends TimedRobot {
     m_overExtensionChooser.addOption("No, We Don't Care", kNCare);
     m_overExtensionChooser.setDefaultOption("Default (No)", kNCare);
     SmartDashboard.putData("Anti-Overextension Code?", m_overExtensionChooser);
+
+    m_debugChooser.addOption("Debugging", kDebug);
+    m_debugChooser.setDefaultOption("Default (No Debugging)", kNorm);
+    SmartDashboard.putData("Debug Mode", m_debugChooser);
+  
     SmartDashboard.putNumber("chargeBalance Power", -0.03f);
 
     m_autoChooser.addOption("No Dock Cube L of C", kNDockCubeL);
     m_autoChooser.addOption("No Dock Cube R of C", kNDockCubeR);
     m_autoChooser.addOption("No Dock Cube Straight", kNDockCubeMisc);
     m_autoChooser.addOption("No Dock Cone Straight", kNDockConeMisc);
-    m_autoChooser.addOption("No Dock Cone L of C", kNDockConeL);
-    m_autoChooser.addOption("No Dock Cone R of C", kNDockConeR);
-    m_autoChooser.addOption("Dock Cube L of C", kYDockCubeL);
+    m_autoChooser.addOption("NDock Cone L of C, L Post", kNDockConeLL);
+    m_autoChooser.addOption("NDock Cone L of C, R Post", kNDockConeLR);
+    m_autoChooser.addOption("NDock Cone R of C, L Post", kNDockConeRL);
+    m_autoChooser.addOption("NDock Cone R of C, R Post", kNDockConeRR);
     m_autoChooser.addOption("Dock Cube C", kYDockCubeC);
-    m_autoChooser.addOption("Dock Cube R of C", kYDockCubeR);
-    m_autoChooser.addOption("Dock Cone L of C", kYDockConeL);
     m_autoChooser.addOption("Dock Cone C", kYDockConeC);
-    m_autoChooser.addOption("Dock Cone R of C", kYDockConeR);
 
     m_autoChooser.addOption("Drive Auto", kDriveAuto);
 
@@ -171,6 +172,9 @@ public class Robot extends TimedRobot {
     m_autoSelected = m_autoChooser.getSelected();
     System.out.println("Auto selected: " + m_autoSelected);
 
+    isDebug = false;
+    if (m_debugChooser.getSelected() == kDebug) isDebug = true;
+
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
     isChargeTipped = false;
     isCommunityLeft = false;
@@ -183,12 +187,15 @@ public class Robot extends TimedRobot {
     checkTendons();
     x = tx.getDouble(0.0);
     y = ty.getDouble(0.0);
+    
+    if (isDebug) {
     SmartDashboard.putBoolean("isChargeTipped", isChargeTipped);
     SmartDashboard.putBoolean("isCommunityLeft", isCommunityLeft);
     SmartDashboard.putBoolean("isChargeLevel", isChargeLevel);
     SmartDashboard.putNumber("Yaw", gyro.getYaw());
     SmartDashboard.putNumber("Pitch", gyro.getPitch());
     SmartDashboard.putNumber("Roll", gyro.getRoll());
+    }
 
     switch (m_autoSelected) {
       case kNDockCubeL: case kNDockCubeR: // takes both cases (only difference is strafe, which is dictated when necessary)
@@ -200,7 +207,7 @@ public class Robot extends TimedRobot {
           moveForeArmToPos(1, 0.633);
           moveUpperArmToPos(0.8, 0.639);
 
-        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
+        } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
           m_robotDrive.driveCartesian(0.25, 0, 0);
           moveForeArmToPos(1, 0.633);
           moveUpperArmToPos(0.8, 0.639);
@@ -282,8 +289,12 @@ public class Robot extends TimedRobot {
         }
         break;
       
-      case kNDockConeL: case kNDockConeR:
-      table.getEntry("pipeline").setNumber(2); 
+      case kNDockConeLL: case kNDockConeLR: case kNDockConeRL: case kNDockConeRR:
+      if (m_autoSelected == kNDockConeLL || m_autoSelected == kNDockConeRL) {
+        table.getEntry("pipeline").setNumber(0); // use left post limelight pipeline
+      } else {
+        table.getEntry("pipeline").setNumber(2); // use right post limelight pipeline
+      }
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(1, "cone");
 
@@ -302,7 +313,6 @@ public class Robot extends TimedRobot {
           moveForeArm(-1);
 
         } else if (9.5 < auto_timer.get() && auto_timer.get() < 10.0) {
-          // limelightTarget(x, y);
           grabGamePiece(0.5, "open");
           moveForeArm(-0.8);
 
@@ -328,7 +338,7 @@ public class Robot extends TimedRobot {
             yaw_adjust = -0.5;
           }
           
-          if (m_autoSelected == kNDockConeL) {
+          if (m_autoSelected == kNDockConeLR || m_autoSelected == kNDockConeLL) {
             m_robotDrive.driveCartesian(-0.25, .75, -yaw_adjust);
           } else {
             m_robotDrive.driveCartesian(-0.25, -.75, -yaw_adjust);
@@ -363,7 +373,7 @@ public class Robot extends TimedRobot {
         }
         break;
       
-      case kNDockCubeMisc:
+      case kNDockCubeMisc: // TODO: THIS CODE DOESN'T USE THE POTENTIOMETERS, BUT ALSO WORKS FAR BETTER.
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
           grabGamePiece(1, "cube");
 
@@ -377,37 +387,11 @@ public class Robot extends TimedRobot {
           moveForeArm(1);
           moveUpperArm(-0.75);
 
-        } else if (6.0 < auto_timer.get() && auto_timer.get() < 7.5) {
+        } else if (6.0 < auto_timer.get() && auto_timer.get() < 15.0) {
           m_robotDrive.driveCartesian(0, 0, 0);
           grabGamePiece(1, "open");
-          moveForeArm(0);
-          moveUpperArm(0);
-
-        // } else if (7.5 < auto_timer.get() && auto_timer.get() < 8.5) {
-        //   m_robotDrive.driveCartesian(-0.25, 0, 0);
-        //   grabGamePiece(0, "zero");
-        //   moveForeArm(-1);
-        //   moveUpperArm(1);
-
-        // } else if (8.5 < auto_timer.get() && auto_timer.get() < 15.0) {
-        //   grabGamePiece(0, "zero");
-        //   moveForeArm(-1);
-        //   moveUpperArm(1);
-          
-        //   yaw = gyro.getYaw();
-
-        //   if (Math.abs(yaw) > min_commandYaw) {
-        //     yaw_adjust = KpYaw * yaw;
-        //   }
-    
-        //   if (yaw_adjust > 0.5) {
-        //     yaw_adjust = 0.5;
-        //   } else if (yaw_adjust < -0.5) {
-        //     yaw_adjust = -0.5;
-        //   }
-
-        //   m_robotDrive.driveCartesian(0, 0, -yaw_adjust);
-        //   yaw_adjust = 0;
+          moveForeArm(1);
+          moveUpperArm(-0.75);
 
         }  else {
           m_robotDrive.driveCartesian(0, 0, 0);
@@ -492,10 +476,6 @@ public class Robot extends TimedRobot {
           grabGamePiece(0, "zero");
         }
         break;
-        
-      case kYDockConeL:
-        // Implement if you aren't lazy
-        break;
     
       case kYDockConeC:
         if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
@@ -561,10 +541,6 @@ public class Robot extends TimedRobot {
         }
         break;
       
-      case kYDockConeR:
-        // Implement if you aren't lazy
-        break;
-      
       case kYDockCubeC:
       if (0.0 < auto_timer.get() && auto_timer.get() < 1.0) {
         grabGamePiece(1, "cube");
@@ -574,7 +550,7 @@ public class Robot extends TimedRobot {
         moveForeArmToPos(1, 0.633);
         moveUpperArmToPos(0.8, 0.639);
 
-      } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) { // TODO: Forearm goes too high, leading to bouncing. Add second parameter to foreArm to set (percentage extended or direct value) of how high to go.
+      } else if (4.5 < auto_timer.get() && auto_timer.get() < 6.0) {
         m_robotDrive.driveCartesian(0.25, 0, 0);
         moveForeArmToPos(1, 0.633);
         moveUpperArmToPos(0.8, 0.639);
@@ -627,10 +603,6 @@ public class Robot extends TimedRobot {
           m_robotDrive.driveCartesian(0, 0, 0);
         }
         break;
-        
-      case kYDockCubeL:
-        // Implement if you aren't lazy
-        break;
       
       case kDriveAuto:
         if (0.0 < auto_timer.get() && auto_timer.get() < 2.0) {
@@ -678,6 +650,7 @@ public class Robot extends TimedRobot {
       isIntakeMax = true;
     }
 
+    if (isDebug) {
     SmartDashboard.putBoolean("isUpperArmZero", isUpperArmZero);
     SmartDashboard.putBoolean("isUpperArmMax", isUpperArmMax);
     SmartDashboard.putBoolean("isForeArmZero", isForeArmZero);
@@ -687,6 +660,7 @@ public class Robot extends TimedRobot {
 
     SmartDashboard.putBoolean("Kickstand Max", !_kickStandMax.get());
     SmartDashboard.putBoolean("Kickstand Zero", !_kickStandZero.get());
+    }
   }
 
   public void checkOverExtended() {
@@ -785,9 +759,6 @@ public class Robot extends TimedRobot {
       yaw_adjust = -0.5;
     }
 
-    // SmartDashboard.putNumber("x_adjust", x_adjust);
-    // SmartDashboard.putNumber("y_adjust", y_adjust);
-    // SmartDashboard.putNumber("yaw_adjust", yaw_adjust);
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), -x_adjust + l_stick.getX(), -yaw_adjust + r_stick.getX());
   }
 
@@ -954,19 +925,22 @@ public class Robot extends TimedRobot {
      * MIN VALUE: ~0.05
      */
     double targetDistance = 0.087114023795086; // 19 inches is the sweet spot?
-    double travelDistance = (_rangeFinder.get() - targetDistance) * 20;
+    double travelDistance = _rangeFinder.get() - targetDistance;
   
     y_adjust = 0.0f;
 
-    if (Math.abs(travelDistance) > 0.13f) {
-      y_adjust = 0.13f * travelDistance;
+    if (Math.abs(travelDistance) > 0.01f) { // sets proper deadzone
+      y_adjust = travelDistance * 15; // should be sensitive enough, but may be too sensitive.
     }
 
-    if (y_adjust > 0.2) y_adjust = 0.2;
+    if (y_adjust > 0.2) y_adjust = 0.2; // TODO: CHANGE TO 0.25? IF SO, THEN ADJUST POWER LEVEL ABOVE
     if (y_adjust < -0.2) y_adjust = -0.2;
-    // else if (Math.abs(travelDistance) < 0.001f) y_adjust = 0;
+
+    if (isDebug) {
     SmartDashboard.putNumber("Travel Distance", travelDistance);
     SmartDashboard.putNumber("y_adjust", y_adjust);
+    }
+
     m_robotDrive.driveCartesian(y_adjust - l_stick.getY(), l_stick.getX(), r_stick.getZ());
 
   }
@@ -984,10 +958,9 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopInit() {
     m_OESelected = m_overExtensionChooser.getSelected();
+    OECheck = false;
     if (m_OESelected == kYCare) {
       OECheck = true;
-    } else {
-      OECheck = false;
     }
 
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
@@ -1032,16 +1005,18 @@ public class Robot extends TimedRobot {
 
     checkTendons();
     checkOverExtended();
-    SmartDashboard.putNumber("Upper Arm Potentiometer value", _UAtendon.get());
-    SmartDashboard.putNumber("Forearm Potentiometer value", _FAtendon.get());
-    SmartDashboard.putNumber("Intake Potentiometer value", _Itendon.get());
-    SmartDashboard.putNumber("Range Value", _rangeFinder.get());
 
     if (Math.abs(gyro.getAngle()) > 360) gyro.reset();
     
-    SmartDashboard.putNumber("Yaw", gyro.getYaw());
-    SmartDashboard.putNumber("Pitch", gyro.getPitch());
-    SmartDashboard.putNumber("Roll", gyro.getRoll());
+    if (isDebug) {
+      SmartDashboard.putNumber("Upper Arm Potentiometer value", _UAtendon.get());
+      SmartDashboard.putNumber("Forearm Potentiometer value", _FAtendon.get());
+      SmartDashboard.putNumber("Intake Potentiometer value", _Itendon.get());
+      SmartDashboard.putNumber("Range Value", _rangeFinder.get());
+      SmartDashboard.putNumber("Yaw", gyro.getYaw());
+      SmartDashboard.putNumber("Pitch", gyro.getPitch());
+      SmartDashboard.putNumber("Roll", gyro.getRoll());
+      }
 
     // UPPER ARM CONTROL
     if (xbox.getLeftY() > .2) {
@@ -1105,14 +1080,8 @@ public class Robot extends TimedRobot {
     else if (r_stick.getRawButton(1)) { // LIMELIGHT right targeting
       table.getEntry("pipeline").setNumber(2); 
       limelightTarget(x, y);
-    // } else if (l_stick.getRawButton(3)) { // LIMELIGHT bottom covered?
-    //   table.getEntry("pipeline").setNumber(3);
-    //   limelightTarget(x, y);
     }
     
-    // else if (r_stick.getRawButtonPressed(1)) { // snapshot taker (requires pit testing)
-    //   table.getEntry("snapshot").setNumber(1);
-    // } 
     else if (l_stick.getRawButton(2)) {
       table.getEntry("ledMode").setNumber(3);
     } else {
@@ -1120,9 +1089,6 @@ public class Robot extends TimedRobot {
     }
     
     if (r_stick.getRawButton(2)) {
-      // if (r_stick.getRawButtonPressed(2)) {
-      //   gyro.reset(); // resets gyro when the button is initially PRESSED (this happens once per press)
-      // }
       chargeBalance();
     }
   }
