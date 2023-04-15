@@ -22,11 +22,12 @@ import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.AnalogPotentiometer;
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.MathUtil;
 
 /*            UNUSED IMPORTS
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.math.trajectory.*;
-import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PS4Controller;
 import edu.wpi.first.wpilibj.Filesystem.*;
@@ -37,21 +38,22 @@ import edu.wpi.first.math.filter.SlewRateLimiter;
 */
 
 public class Robot extends TimedRobot {
-  WPI_TalonSRX _driveFrontLeft = new WPI_TalonSRX(4);
+  WPI_TalonSRX _driveFrontLeft = new WPI_TalonSRX(4); // 4 -> 1
   WPI_TalonSRX _driveRearLeft = new WPI_TalonSRX(2);
-  WPI_TalonSRX _driveFrontRight = new WPI_TalonSRX(1);
-  WPI_TalonSRX _driveRearRight = new WPI_TalonSRX(5);
-  WPI_TalonSRX _intake = new WPI_TalonSRX(3);
+  WPI_TalonSRX _driveFrontRight = new WPI_TalonSRX(1); // 1 -> 3
+  WPI_TalonSRX _driveRearRight = new WPI_TalonSRX(5); // 5 -> 4
+  WPI_TalonSRX _intake = new WPI_TalonSRX(3); // 3 -> 5
   WPI_TalonSRX _foreArm = new WPI_TalonSRX(6);
-  WPI_TalonSRX _kickStand = new WPI_TalonSRX(9);
   CANSparkMax _upperArm = new CANSparkMax(7, MotorType.kBrushless);
-  WPI_Pigeon2 gyro = new WPI_Pigeon2(8);
+  WPI_TalonSRX _kickStand = new WPI_TalonSRX(9); // 9 -> 8
+  WPI_Pigeon2 gyro = new WPI_Pigeon2(8); // 8 -> 9
 
   AnalogPotentiometer _UAtendon = new AnalogPotentiometer(0); double zeroUAtendon = 0.531; double maxUAtendon = 0.652;
   AnalogPotentiometer _FAtendon = new AnalogPotentiometer(1); double zeroFAtendon = 0.967; double maxFAtendon = 0.612;
   AnalogPotentiometer _Itendon = new AnalogPotentiometer(2); double zeroItendon = 0.540; double maxItendon = 0.850;
 
   AnalogPotentiometer _rangeFinder = new AnalogPotentiometer(3);
+  PIDController _hpPID = new PIDController(4, 0, 0.0);
 
   DigitalInput _kickStandMax = new DigitalInput(0);
   DigitalInput _kickStandZero = new DigitalInput(1);
@@ -667,7 +669,6 @@ public class Robot extends TimedRobot {
     isOverExtended = false;
     double UA = _UAtendon.get();
     double FA = _FAtendon.get();
-
     if (UA <= 0.596) { // 48" - 46"
       if (FA < 0.682) {isOverExtended = true;}
     } else if (0.596 < UA && UA <= 0.609) { // 46" - 44"
@@ -871,7 +872,7 @@ public class Robot extends TimedRobot {
 
   public void moveToIntakeHP(double speed) {
     double desiredUA = 0.537;
-    double desiredFA = 0.775;
+    double desiredFA = 0.771;
     
     moveForeArm(0);
     moveUpperArm(0);
@@ -927,14 +928,18 @@ public class Robot extends TimedRobot {
     double targetDistance = 0.087114023795086; // 19 inches is the sweet spot?
     double travelDistance = _rangeFinder.get() - targetDistance;
   
-    y_adjust = 0.0f;
+    // y_adjust = 0.0f;
 
-    if (Math.abs(travelDistance) > 0.01f) { // sets proper deadzone
-      y_adjust = travelDistance * 15; // should be sensitive enough, but may be too sensitive.
-    }
+    // if (Math.abs(travelDistance) > 0.01f) { // sets proper deadzone
+    //   y_adjust = travelDistance * 3; // should be sensitive enough, but may be too sensitive.
+    // }
 
-    if (y_adjust > 0.2) y_adjust = 0.2; // TODO: CHANGE TO 0.25? IF SO, THEN ADJUST POWER LEVEL ABOVE
-    if (y_adjust < -0.2) y_adjust = -0.2;
+    // if (y_adjust > 0.5) y_adjust = 0.5; // TODO: CHANGE TO 0.25? IF SO, THEN ADJUST POWER LEVEL ABOVE
+    // if (y_adjust < -0.5) y_adjust = -0.5;
+
+    y_adjust = -MathUtil.clamp(
+      _hpPID.calculate(_rangeFinder.get(), targetDistance),
+      -0.2, 0.2);
 
     if (isDebug) {
     SmartDashboard.putNumber("Travel Distance", travelDistance);
@@ -962,6 +967,9 @@ public class Robot extends TimedRobot {
     if (m_OESelected == kYCare) {
       OECheck = true;
     }
+
+    isDebug = false;
+    if (m_debugChooser.getSelected() == kDebug) isDebug = true;
 
     KpPitch = (float)SmartDashboard.getNumber("chargeBalance Power", -0.03f);
     table.getEntry("stream").setNumber(1); // sets intake camera to be larger than limelight cam
@@ -1067,7 +1075,7 @@ public class Robot extends TimedRobot {
       kickStand(0);
     }
 
-    if (l_stick.getRawButton(9)) {
+    if (r_stick.getRawButton(3) || r_stick.getRawButton(5)) {
       driveToHP();
     }
     
